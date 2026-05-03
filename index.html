@@ -504,9 +504,11 @@ function apiCall(payload, useToken) {
   });
 }
 
-// For large payloads — split into chunks of 20
+// For large payloads — split into chunks with retry on failure
 function apiCallLarge(action, eventsArr) {
-  const CHUNK = 20;
+  const CHUNK = 5;
+  const RETRY = 3;
+  const DELAY = 1000;
   const chunks = [];
   for (let i = 0; i < eventsArr.length; i += CHUNK) {
     chunks.push(eventsArr.slice(i, i + CHUNK));
@@ -514,20 +516,28 @@ function apiCallLarge(action, eventsArr) {
   const total = eventsArr.length;
   let saved = 0;
 
-  function sendChunk(idx) {
+  function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function sendChunkWithRetry(idx, attempt) {
     if (idx >= chunks.length) return Promise.resolve({ ok: true });
-    setSyncStatus('loading', 'Saving ' + Math.min(saved + chunks[idx].length, total) + ' of ' + total + '...');
+    setSyncStatus('loading', 'Saving ' + Math.min(saved + chunks[idx].length, total) + ' of ' + total + (attempt > 1 ? ' (retry ' + attempt + ')' : '') + '...');
     return apiCall({ action, events: chunks[idx] })
       .then(result => {
         if (!result.ok) throw new Error(result.error || 'Server error');
         saved += chunks[idx].length;
-        // Small delay between chunks to avoid overloading Apps Script
-        return new Promise(resolve => setTimeout(resolve, 500));
+        return wait(800);
       })
-      .then(() => sendChunk(idx + 1));
+      .then(() => sendChunkWithRetry(idx + 1, 1))
+      .catch(err => {
+        if (attempt < RETRY) {
+          setSyncStatus('loading', 'Retrying chunk ' + (idx+1) + '...');
+          return wait(DELAY * attempt).then(() => sendChunkWithRetry(idx, attempt + 1));
+        }
+        throw err;
+      });
   }
 
-  return sendChunk(0).then(() => ({ ok: true }));
+  return sendChunkWithRetry(0, 1).then(() => ({ ok: true }));
 }
 
 /* ── Calendar data ───────────────────────────────────────────── */
