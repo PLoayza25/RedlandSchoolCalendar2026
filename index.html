@@ -504,22 +504,30 @@ function apiCall(payload, useToken) {
   });
 }
 
-// For large payloads — split into chunks of 50
+// For large payloads — split into chunks of 20
 function apiCallLarge(action, eventsArr) {
-  const CHUNK = 50;
+  const CHUNK = 20;
   const chunks = [];
   for (let i = 0; i < eventsArr.length; i += CHUNK) {
     chunks.push(eventsArr.slice(i, i + CHUNK));
   }
-  let promise = Promise.resolve({ ok: true });
-  chunks.forEach((chunk, idx) => {
-    promise = promise.then(prev => {
-      if (!prev.ok) return prev;
-      setSyncStatus('loading', 'Saving ' + Math.min((idx+1)*CHUNK, eventsArr.length) + '/' + eventsArr.length + '...');
-      return apiCall({ action, events: chunk });
-    });
-  });
-  return promise;
+  const total = eventsArr.length;
+  let saved = 0;
+
+  function sendChunk(idx) {
+    if (idx >= chunks.length) return Promise.resolve({ ok: true });
+    setSyncStatus('loading', 'Saving ' + Math.min(saved + chunks[idx].length, total) + ' of ' + total + '...');
+    return apiCall({ action, events: chunks[idx] })
+      .then(result => {
+        if (!result.ok) throw new Error(result.error || 'Server error');
+        saved += chunks[idx].length;
+        // Small delay between chunks to avoid overloading Apps Script
+        return new Promise(resolve => setTimeout(resolve, 500));
+      })
+      .then(() => sendChunk(idx + 1));
+  }
+
+  return sendChunk(0).then(() => ({ ok: true }));
 }
 
 /* ── Calendar data ───────────────────────────────────────────── */
