@@ -208,6 +208,27 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 .sync-spinner { display:inline-block; width:10px; height:10px; border:1.5px solid var(--border-mid); border-top-color:var(--text-secondary); border-radius:50%; animation:spin 0.7s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg) } }
 
+/* Print modal */
+.print-modal { background: var(--bg-primary); border: 0.5px solid var(--border-mid); border-radius: var(--radius-lg); padding: 1.5rem; width: 500px; max-width: 96vw; max-height: 85vh; overflow-y: auto; }
+.print-modal h3 { font-size: 15px; font-weight: 500; margin-bottom: 1.25rem; color: var(--text-primary); }
+.print-filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+.print-filter-block label { font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 5px; font-weight: 500; }
+.print-filter-block input, .print-filter-block select { width: 100%; font-size: 13px; padding: 6px 10px; border: 0.5px solid var(--border-mid); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); font-family: var(--font); outline: none; }
+.print-check-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.print-check { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-primary); cursor: pointer; padding: 3px 8px; border: 0.5px solid var(--border-light); border-radius: var(--radius-md); user-select: none; }
+.print-check input { width: auto; margin: 0; cursor: pointer; }
+.print-preview { margin-top: 1rem; border: 0.5px solid var(--border-light); border-radius: var(--radius-md); padding: 10px; background: var(--bg-secondary); font-size: 12px; color: var(--text-secondary); min-height: 32px; }
+.print-count { font-size: 12px; color: var(--text-info); font-weight: 500; }
+
+/* Print styles */
+@media print {
+  body * { visibility: hidden; }
+  #print-area, #print-area * { visibility: visible; }
+  #print-area { position: fixed; top: 0; left: 0; width: 100%; padding: 20px; }
+  .print-event-row { break-inside: avoid; }
+}
+#print-area { display: none; }
+
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text-primary); color: var(--bg-primary); font-size: 12px; padding: 8px 18px; border-radius: var(--radius-md); z-index: 400; opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap; }
 .toast.show { opacity: 1; }
 </style>
@@ -240,6 +261,7 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
       <button class="icon-btn" id="export-btn" onclick="exportEvents()" style="display:none" title="Download all events as a backup file">&#8595; Export</button>
       <button class="icon-btn" id="import-btn" onclick="document.getElementById('import-file').click()" title="Load events from a backup file" style="display:none">&#8593; Import</button>
       <input type="file" id="import-file" accept=".json" style="display:none" onchange="importEvents(event)">
+      <button class="icon-btn" onclick="openPrintModal()" title="Print or export as PDF">&#128438; Print / PDF</button>
       <button class="icon-btn" onclick="doLogout()">Sign out</button>
     </div>
   </div>
@@ -301,6 +323,7 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 </div>
 
 <div id="modal-area"></div>
+<div id="print-area"></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -349,7 +372,154 @@ function setLoginTab(t) {
   document.getElementById('pw-label').textContent = t==='viewer' ? 'Viewer password' : 'Editor password';
   document.getElementById('login-error').textContent = '';
   document.getElementById('pw-input').value = '';
-  document.getElementById('pw-input').focus();
+  /* ── Print / PDF ─────────────────────────────────────────────── */
+function openPrintModal() {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.id = 'print-modal-backdrop';
+
+  const sections = ['Junior','Middle','Senior','Cross School','Salida','Feriado'];
+  const types    = ['activity','test','salida','cross','feriado'];
+  const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'Cross School',feriado:'Feriado'};
+
+  const secChecks = sections.map(s =>
+    '<label class="print-check"><input type="checkbox" class="psc" value="'+s+'" checked> '+s+'</label>'
+  ).join('');
+  const typeChecks = types.map(t =>
+    '<label class="print-check"><input type="checkbox" class="ptc" value="'+t+'" checked> '+typeLabels[t]+'</label>'
+  ).join('');
+
+  const today = fmt(TODAY);
+  const yearEnd = TODAY.getFullYear() + '-12-31';
+
+  backdrop.innerHTML = '<div class="print-modal">'
+    +'<h3>&#128438; Print / Export PDF</h3>'
+    +'<div class="print-filter-row">'
+    +'<div class="print-filter-block"><label>From date</label><input type="date" id="pf-from" value="'+today+'"></div>'
+    +'<div class="print-filter-block"><label>To date</label><input type="date" id="pf-to" value="'+yearEnd+'"></div>'
+    +'</div>'
+    +'<div class="print-filter-block" style="margin-bottom:10px"><label>Sections</label><div class="print-check-grid">'+secChecks+'</div></div>'
+    +'<div class="print-filter-block" style="margin-bottom:10px"><label>Types</label><div class="print-check-grid">'+typeChecks+'</div></div>'
+    +'<div class="print-filter-block" style="margin-bottom:12px"><label>Class (optional — leave blank for all)</label>'
+    +'<input type="text" id="pf-class" placeholder="e.g. 5A or leave blank for all classes"></div>'
+    +'<div class="print-preview" id="print-preview">Select filters to see matching events.</div>'
+    +'<div class="modal-actions" style="margin-top:1rem">'
+    +'<button class="btn-cancel" id="print-cancel">Cancel</button>'
+    +'<button class="btn-save" id="print-go">&#128438; Open Print / PDF</button>'
+    +'</div></div>';
+
+  document.body.appendChild(backdrop);
+
+  function getFiltered() {
+    const from = document.getElementById('pf-from').value;
+    const to   = document.getElementById('pf-to').value;
+    const classFilter = document.getElementById('pf-class').value.trim().toUpperCase();
+    const selSecs  = [...document.querySelectorAll('.psc:checked')].map(e=>e.value);
+    const selTypes = [...document.querySelectorAll('.ptc:checked')].map(e=>e.value);
+
+    return events.filter(ev => {
+      if (ev.date < from || ev.date > to) return false;
+      const sk = evSectionKey(ev);
+      const secLabel = sk==='Cross'?'Cross School':sk;
+      if (!selSecs.includes(secLabel)) return false;
+      const typeKey = sk==='Cross'?'cross':ev.type;
+      if (!selTypes.includes(typeKey)) return false;
+      if (classFilter && ev.classes && ev.classes.length>0) {
+        if (!ev.classes.some(c=>c.toUpperCase()===classFilter)) return false;
+      }
+      return true;
+    }).sort((a,b)=>a.date.localeCompare(b.date));
+  }
+
+  function updatePreview() {
+    const filtered = getFiltered();
+    const preview = document.getElementById('print-preview');
+    if (filtered.length===0) {
+      preview.innerHTML = 'No events match the selected filters.';
+    } else {
+      preview.innerHTML = '<span class="print-count">'+filtered.length+' event(s) found</span> — '
+        + filtered.slice(0,3).map(e=>e.date+' '+e.title).join(', ')
+        + (filtered.length>3?' ...':'');
+    }
+  }
+
+  backdrop.addEventListener('change', updatePreview);
+  backdrop.addEventListener('input', updatePreview);
+  updatePreview();
+
+  document.getElementById('print-cancel').onclick = ()=>backdrop.remove();
+  document.getElementById('print-go').onclick = ()=>{
+    const filtered = getFiltered();
+    if (filtered.length===0) { alert('No events match your filters.'); return; }
+    backdrop.remove();
+    doPrint(filtered);
+  };
+}
+
+function doPrint(filtered) {
+  const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'Cross School',feriado:'Feriado'};
+  const typeColors = {
+    activity:'#1A6B35', test:'#1a1a18', salida:'#72243E',
+    cross:'#D85A30', feriado:'#1A6B35'
+  };
+
+  // Group by date
+  const byDateMap = {};
+  filtered.forEach(e => {
+    if (!byDateMap[e.date]) byDateMap[e.date] = [];
+    byDateMap[e.date].push(e);
+  });
+
+  const dates = Object.keys(byDateMap).sort();
+
+  let html = '<div style="font-family:Arial,sans-serif;max-width:750px;margin:0 auto;padding:20px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:2px solid #1a1a18;padding-bottom:12px">'
+    +'<h1 style="font-size:20px;font-weight:700;margin:0">School Calendar</h1>'
+    +'<span style="font-size:12px;color:#888">Printed: '+new Date().toLocaleDateString('es-CL')+'</span>'
+    +'</div>';
+
+  dates.forEach(date => {
+    const d = new Date(date+'T12:00:00');
+    const dateLabel = d.toLocaleDateString('es-CL', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+    html += '<div class="print-event-row" style="margin-bottom:14px">'
+      +'<div style="font-size:12px;font-weight:600;color:#444;text-transform:capitalize;margin-bottom:5px;padding-bottom:3px;border-bottom:0.5px solid #ddd">'+dateLabel+'</div>';
+
+    byDateMap[date].forEach(e => {
+      const sk = evSectionKey(e);
+      const secLabel = sk==='Cross'?'Cross School':sk;
+      const typeLabel = typeLabels[e.type] || e.type;
+      const color = e.type==='test' ? (sk==='Senior'?'#5C1A2E':'#1a1a18') : (typeColors[e.type]||'#444');
+      const classStr = e.classes&&e.classes.length ? e.classes.join(', ') : 'All sections';
+      html += '<div style="display:flex;align-items:flex-start;gap:10px;padding:6px 8px;margin-bottom:4px;background:#f9f9f7;border-radius:5px;border-left:3px solid '+color+'">'
+        +'<div style="flex:1">'
+        +'<div style="font-size:13px;font-weight:600;color:#1a1a18">'+e.title+'</div>'
+        +'<div style="font-size:11px;color:#666;margin-top:2px">'+secLabel+' &nbsp;·&nbsp; '+classStr+'</div>'
+        +'</div>'
+        +'<span style="font-size:10px;padding:2px 8px;border-radius:999px;background:'+color+';color:#fff;white-space:nowrap;flex-shrink:0">'+typeLabel+'</span>'
+        +'</div>';
+    });
+
+    html += '</div>';
+  });
+
+  html += '<div style="margin-top:24px;font-size:10px;color:#aaa;text-align:center;border-top:0.5px solid #eee;padding-top:8px">Redland School Calendar &nbsp;·&nbsp; '+filtered.length+' events</div>';
+  html += '</div>';
+
+  // Open in new window for printing
+  const win = window.open('','_blank','width=800,height=700');
+  win.document.write('<!DOCTYPE html><html><head><title>School Calendar</title>'
+    +'<style>body{margin:0;padding:0} @media print{.no-print{display:none}} '
+    +'@page{margin:15mm}</style></head><body>'
+    +'<div class="no-print" style="background:#f0f0ee;padding:12px 20px;display:flex;gap:10px;align-items:center">'
+    +'<button onclick="window.print()" style="background:#1a1a18;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer">&#128438; Print / Save as PDF</button>'
+    +'<span style="font-size:12px;color:#666">To save as PDF: choose <strong>Save as PDF</strong> as the printer</span>'
+    +'<button onclick="window.close()" style="margin-left:auto;background:none;border:0.5px solid #ccc;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer">Close</button>'
+    +'</div>'
+    +html+'</body></html>');
+  win.document.close();
+}
+
+document.getElementById('pw-input').focus();
 }
 
 function doLogin() {
@@ -1127,6 +1297,153 @@ function showImportChoiceModal(incoming, newOnly, dupCount) {
   document.getElementById('imp-cancel').onclick=()=>backdrop.remove();
   document.getElementById('imp-replace').onclick=()=>{ backdrop.remove(); doImport('replace',incoming,newOnly,dupCount); };
   document.getElementById('imp-merge').onclick=()=>{ backdrop.remove(); doImport('merge',incoming,newOnly,dupCount); };
+}
+
+/* ── Print / PDF ─────────────────────────────────────────────── */
+function openPrintModal() {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.id = 'print-modal-backdrop';
+
+  const sections = ['Junior','Middle','Senior','Cross School','Salida','Feriado'];
+  const types    = ['activity','test','salida','cross','feriado'];
+  const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'Cross School',feriado:'Feriado'};
+
+  const secChecks = sections.map(s =>
+    '<label class="print-check"><input type="checkbox" class="psc" value="'+s+'" checked> '+s+'</label>'
+  ).join('');
+  const typeChecks = types.map(t =>
+    '<label class="print-check"><input type="checkbox" class="ptc" value="'+t+'" checked> '+typeLabels[t]+'</label>'
+  ).join('');
+
+  const today = fmt(TODAY);
+  const yearEnd = TODAY.getFullYear() + '-12-31';
+
+  backdrop.innerHTML = '<div class="print-modal">'
+    +'<h3>&#128438; Print / Export PDF</h3>'
+    +'<div class="print-filter-row">'
+    +'<div class="print-filter-block"><label>From date</label><input type="date" id="pf-from" value="'+today+'"></div>'
+    +'<div class="print-filter-block"><label>To date</label><input type="date" id="pf-to" value="'+yearEnd+'"></div>'
+    +'</div>'
+    +'<div class="print-filter-block" style="margin-bottom:10px"><label>Sections</label><div class="print-check-grid">'+secChecks+'</div></div>'
+    +'<div class="print-filter-block" style="margin-bottom:10px"><label>Types</label><div class="print-check-grid">'+typeChecks+'</div></div>'
+    +'<div class="print-filter-block" style="margin-bottom:12px"><label>Class (optional — leave blank for all)</label>'
+    +'<input type="text" id="pf-class" placeholder="e.g. 5A or leave blank for all classes"></div>'
+    +'<div class="print-preview" id="print-preview">Select filters to see matching events.</div>'
+    +'<div class="modal-actions" style="margin-top:1rem">'
+    +'<button class="btn-cancel" id="print-cancel">Cancel</button>'
+    +'<button class="btn-save" id="print-go">&#128438; Open Print / PDF</button>'
+    +'</div></div>';
+
+  document.body.appendChild(backdrop);
+
+  function getFiltered() {
+    const from = document.getElementById('pf-from').value;
+    const to   = document.getElementById('pf-to').value;
+    const classFilter = document.getElementById('pf-class').value.trim().toUpperCase();
+    const selSecs  = [...document.querySelectorAll('.psc:checked')].map(e=>e.value);
+    const selTypes = [...document.querySelectorAll('.ptc:checked')].map(e=>e.value);
+
+    return events.filter(ev => {
+      if (ev.date < from || ev.date > to) return false;
+      const sk = evSectionKey(ev);
+      const secLabel = sk==='Cross'?'Cross School':sk;
+      if (!selSecs.includes(secLabel)) return false;
+      const typeKey = sk==='Cross'?'cross':ev.type;
+      if (!selTypes.includes(typeKey)) return false;
+      if (classFilter && ev.classes && ev.classes.length>0) {
+        if (!ev.classes.some(c=>c.toUpperCase()===classFilter)) return false;
+      }
+      return true;
+    }).sort((a,b)=>a.date.localeCompare(b.date));
+  }
+
+  function updatePreview() {
+    const filtered = getFiltered();
+    const preview = document.getElementById('print-preview');
+    if (filtered.length===0) {
+      preview.innerHTML = 'No events match the selected filters.';
+    } else {
+      preview.innerHTML = '<span class="print-count">'+filtered.length+' event(s) found</span> — '
+        + filtered.slice(0,3).map(e=>e.date+' '+e.title).join(', ')
+        + (filtered.length>3?' ...':'');
+    }
+  }
+
+  backdrop.addEventListener('change', updatePreview);
+  backdrop.addEventListener('input', updatePreview);
+  updatePreview();
+
+  document.getElementById('print-cancel').onclick = ()=>backdrop.remove();
+  document.getElementById('print-go').onclick = ()=>{
+    const filtered = getFiltered();
+    if (filtered.length===0) { alert('No events match your filters.'); return; }
+    backdrop.remove();
+    doPrint(filtered);
+  };
+}
+
+function doPrint(filtered) {
+  const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'Cross School',feriado:'Feriado'};
+  const typeColors = {
+    activity:'#1A6B35', test:'#1a1a18', salida:'#72243E',
+    cross:'#D85A30', feriado:'#1A6B35'
+  };
+
+  // Group by date
+  const byDateMap = {};
+  filtered.forEach(e => {
+    if (!byDateMap[e.date]) byDateMap[e.date] = [];
+    byDateMap[e.date].push(e);
+  });
+
+  const dates = Object.keys(byDateMap).sort();
+
+  let html = '<div style="font-family:Arial,sans-serif;max-width:750px;margin:0 auto;padding:20px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:2px solid #1a1a18;padding-bottom:12px">'
+    +'<h1 style="font-size:20px;font-weight:700;margin:0">School Calendar</h1>'
+    +'<span style="font-size:12px;color:#888">Printed: '+new Date().toLocaleDateString('es-CL')+'</span>'
+    +'</div>';
+
+  dates.forEach(date => {
+    const d = new Date(date+'T12:00:00');
+    const dateLabel = d.toLocaleDateString('es-CL', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+    html += '<div class="print-event-row" style="margin-bottom:14px">'
+      +'<div style="font-size:12px;font-weight:600;color:#444;text-transform:capitalize;margin-bottom:5px;padding-bottom:3px;border-bottom:0.5px solid #ddd">'+dateLabel+'</div>';
+
+    byDateMap[date].forEach(e => {
+      const sk = evSectionKey(e);
+      const secLabel = sk==='Cross'?'Cross School':sk;
+      const typeLabel = typeLabels[e.type] || e.type;
+      const color = e.type==='test' ? (sk==='Senior'?'#5C1A2E':'#1a1a18') : (typeColors[e.type]||'#444');
+      const classStr = e.classes&&e.classes.length ? e.classes.join(', ') : 'All sections';
+      html += '<div style="display:flex;align-items:flex-start;gap:10px;padding:6px 8px;margin-bottom:4px;background:#f9f9f7;border-radius:5px;border-left:3px solid '+color+'">'
+        +'<div style="flex:1">'
+        +'<div style="font-size:13px;font-weight:600;color:#1a1a18">'+e.title+'</div>'
+        +'<div style="font-size:11px;color:#666;margin-top:2px">'+secLabel+' &nbsp;·&nbsp; '+classStr+'</div>'
+        +'</div>'
+        +'<span style="font-size:10px;padding:2px 8px;border-radius:999px;background:'+color+';color:#fff;white-space:nowrap;flex-shrink:0">'+typeLabel+'</span>'
+        +'</div>';
+    });
+
+    html += '</div>';
+  });
+
+  html += '<div style="margin-top:24px;font-size:10px;color:#aaa;text-align:center;border-top:0.5px solid #eee;padding-top:8px">Redland School Calendar &nbsp;·&nbsp; '+filtered.length+' events</div>';
+  html += '</div>';
+
+  // Open in new window for printing
+  const win = window.open('','_blank','width=800,height=700');
+  win.document.write('<!DOCTYPE html><html><head><title>School Calendar</title>'
+    +'<style>body{margin:0;padding:0} @media print{.no-print{display:none}} '
+    +'@page{margin:15mm}</style></head><body>'
+    +'<div class="no-print" style="background:#f0f0ee;padding:12px 20px;display:flex;gap:10px;align-items:center">'
+    +'<button onclick="window.print()" style="background:#1a1a18;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer">&#128438; Print / Save as PDF</button>'
+    +'<span style="font-size:12px;color:#666">To save as PDF: choose <strong>Save as PDF</strong> as the printer</span>'
+    +'<button onclick="window.close()" style="margin-left:auto;background:none;border:0.5px solid #ccc;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer">Close</button>'
+    +'</div>'
+    +html+'</body></html>');
+  win.document.close();
 }
 
 document.getElementById('pw-input').focus();
