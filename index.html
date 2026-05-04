@@ -90,7 +90,12 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 /* Month grid */
 .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; background: var(--border-light); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); overflow: hidden; }
 .day-header { background: var(--bg-secondary); text-align: center; padding: 7px 2px; font-size: 10px; font-weight: 500; color: var(--text-secondary); letter-spacing: .05em; }
-.day-cell { background: var(--bg-primary); min-height: 86px; padding: 5px 4px; transition: background .1s; }
+.day-cell { background: var(--bg-primary); min-height: 90px; padding: 0; transition: background .1s; display: flex; flex-direction: column; }
+.day-cell-top { padding: 5px 4px 3px; flex: 1; min-height: 48px; }
+.day-cell-divider { height: 1px; background: var(--border-light); margin: 0 2px; flex-shrink:0; }
+.day-cell-bottom { padding: 3px 4px 4px; min-height: 30px; background: rgba(0,0,0,0.018); flex-shrink:0; }
+.day-cell.feriado .day-cell-bottom { background: rgba(26,107,53,0.06); }
+.day-cell.today .day-cell-bottom { background: rgba(24,95,165,0.06); }
 .day-cell.other .day-num { color: var(--text-tertiary); }
 .day-cell.today { background: var(--bg-info); }
 .day-cell.feriado { background: #D4EDDA !important; }
@@ -773,16 +778,30 @@ function renderMonth() {
     const dt=fmt(new Date(y,c.mo,c.d));
     const isT=dt===fmt(TODAY);
     const evs=byDate(dt);
-    const hasFeriado=events.some(e=>e.type==='feriado'&&e.date===dt); // dt is local YYYY-MM-DD
-    html+='<div class="day-cell'+(c.other?' other':'')+(isT?' today':'')+(hasFeriado?' feriado':'')+'"><div class="day-num">'+c.d+'</div>';
-    evs.slice(0,3).forEach(e=>{
+    const hasFeriado=events.some(e=>e.type==='feriado'&&e.date===dt);
+    // Split events into top (non-test) and bottom (tests)
+    const topEvs = evs.filter(e=>e.type!=='test');
+    const testEvs = evs.filter(e=>e.type==='test');
+    html+='<div class="day-cell'+(c.other?' other':'')+(isT?' today':'')+(hasFeriado?' feriado':'')+'"><div class="day-cell-top"><div class="day-num">'+c.d+'</div>';
+    topEvs.slice(0,3).forEach(e=>{
       const sk=evSectionKey(e);
       const lbl=sk==='Cross'?'Cross School: '+e.title:(classesLabel(e)?classesLabel(e)+': '+e.title:e.title);
       const rangeClass=e.rangePosition?' ev-range-'+e.rangePosition:'';
       html+='<div class="ev-wrap"><span class="ev '+evChipClass(e)+rangeClass+'" onclick="showDetail('+e.id+',this)" title="'+e.title+'">'+lbl+'</span></div>';
     });
-    if(evs.length>3) html+='<div class="more">+'+(evs.length-3)+' more</div>';
+    if(topEvs.length>3) html+='<div class="more">+'+(topEvs.length-3)+' more</div>';
     html+='</div>';
+    // Bottom half — tests
+    html+='<div class="day-cell-divider"></div><div class="day-cell-bottom">';
+    if(testEvs.length>0){
+      testEvs.slice(0,2).forEach(e=>{
+        const lbl=classesLabel(e)?classesLabel(e)+': '+e.title:e.title;
+        const rangeClass=e.rangePosition?' ev-range-'+e.rangePosition:'';
+        html+='<div class="ev-wrap"><span class="ev '+evChipClass(e)+rangeClass+'" onclick="showDetail('+e.id+',this)" title="'+e.title+'">'+lbl+'</span></div>';
+      });
+      if(testEvs.length>2) html+='<div class="more">+'+(testEvs.length-2)+' more</div>';
+    }
+    html+='</div></div>';
   });
   html+='</div>';
   document.getElementById('cal-view').innerHTML=html;
