@@ -768,8 +768,14 @@ function evChipClass(e) {
 }
 
 function evSectionKey(e) {
-  if (e.type==='sports') return 'Sports';
   if (e.type==='feriado') return 'Feriado';
+  // Sports with no classes = all sections; with classes = derive section from classes
+  if (e.type==='sports') {
+    if (!e.classes||e.classes.length===0) return 'Cross';
+    const secs = new Set(e.classes.map(c=>classSection(c)));
+    if (secs.has('Junior')&&secs.has('Middle')&&secs.has('Senior')) return 'Cross';
+    return classSection(e.classes[0]);
+  }
   if (e.type==='cross'||isCrossSchool(e)) return 'Cross';
   if (!e.classes||e.classes.length===0) return e.type==='salida'?'Salida':'Junior';
   if (e.type==='salida') {
@@ -794,8 +800,9 @@ function visible() {
   return events.filter(e => {
     const sk = evSectionKey(e);
     if (sk==='Feriado') return activeType.has('feriado');
-    if (sk==='Sports')  return activeType.has('sports');
     if (sk==='Salida')  return activeType.has('salida');
+    // sports uses section filter + sports type filter
+    if (e.type==='sports') return activeSec.has(sk) && activeType.has('sports');
     const typeKey = (sk==='Cross')?'cross':e.type;
     return activeSec.has(sk)&&activeType.has(typeKey);
   });
@@ -811,24 +818,33 @@ function isWholeSection(e) {
   if (!e.classes||e.classes.length===0) return true;
   return ['Junior','Middle','Senior'].some(sec=>CLASSES[sec].every(c=>e.classes.includes(c)));
 }
+/* Sort order:
+   -1  Feriado (whole day)
+    0  All-sections (Cross)
+    1  Salidas
+    2  Junior activities + sports  (by grade)
+    3  Middle activities + sports  (by grade)
+    4  Senior activities + sports  (by grade)
+    5  Tests (by grade across all sections)
+*/
+const SEC_ORDER = {Cross:0, Salida:1, Junior:2, Middle:3, Senior:4, Feriado:-1};
+
 function eventPriority(e) {
   const sk = evSectionKey(e);
   if (sk==='Feriado') return -1;
-  if (sk==='Cross') return 0;
-  if (sk==='Sports') return 0.5;
-  if (e.type==='test') return 3;
-  if (!e.classes||e.classes.length===0) return 1;
-  if (isWholeSection(e)) return 1;
-  return 2;
+  if (sk==='Cross')   return 0;
+  if (sk==='Salida')  return 1;
+  if (e.type==='test') return 5;
+  return (SEC_ORDER[sk] !== undefined ? SEC_ORDER[sk] : 4);
 }
+
 function byDate(d) {
   const evs = visible().filter(e=>e.date===d);
-  const secOrder = {Cross:0,Junior:1,Middle:2,Senior:3,Salida:4};
   return evs.sort((a,b)=>{
-    const pa=eventPriority(a),pb=eventPriority(b);
+    const pa=eventPriority(a), pb=eventPriority(b);
     if (pa!==pb) return pa-pb;
-    if (pa===3) return gradeRank(a)-gradeRank(b);
-    return (secOrder[evSectionKey(a)]||9)-(secOrder[evSectionKey(b)]||9);
+    // Same priority — sort by lowest grade ascending
+    return gradeRank(a)-gradeRank(b);
   });
 }
 
@@ -843,7 +859,7 @@ function showDetail(evId, anchorEl) {
   const popup = document.createElement('div');
   popup.className = 'detail-popup';
   const chips = (e.classes||[]).map(c=>'<span class="class-chip">'+c+'</span>').join('');
-  const isCross = e.type==='cross'||isCrossSchool(e);
+  const isCross = e.type==='cross'||isCrossSchool(e)||(e.type==='sports'&&evSectionKey(e)==='Cross');
   const isFeriado = e.type==='feriado';
   const secDisplay = isCross?'All sections (all sections)':isFeriado?'Whole school':evSectionKey(e);
   const dateDisplay = e.groupId ? (e.rangeStart+' \u2192 '+e.rangeEnd) : e.date;
