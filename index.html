@@ -308,16 +308,13 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
     <span class="pill p-junior" data-f="sec" data-v="Junior">Junior</span>
     <span class="pill p-middle" data-f="sec" data-v="Middle">Middle</span>
     <span class="pill p-senior" data-f="sec" data-v="Senior">Senior</span>
-    <span class="pill p-salida" data-f="sec" data-v="Salida">Salidas</span>
     <span class="pill p-cross" data-f="sec" data-v="Cross">School-wide</span>
-    <span class="pill p-sports" data-f="sec" data-v="Sports">Sports</span>
   </div>
   <div class="filter-row">
     <span class="filter-label">Type</span>
     <span class="pill" style="background:#F1EFE8;color:#444441;border-color:#B4B2A9" data-f="type" data-v="activity">Activity</span>
     <span class="pill" style="background:#444441;color:#F1EFE8;border-color:#2C2C2A" data-f="type" data-v="test">Test</span>
     <span class="pill p-salida" data-f="type" data-v="salida">Salida</span>
-    <span class="pill p-cross" data-f="type" data-v="cross">School-wide</span>
     <span class="pill" style="background:#1A6B35;color:#ffffff;border-color:#145228;font-weight:500" data-f="type" data-v="feriado">Feriado</span>
     <span class="pill p-sports" data-f="type" data-v="sports">Sports</span>
   </div>
@@ -382,8 +379,8 @@ function openPrintModal() {
   backdrop.className = 'modal-backdrop';
   backdrop.id = 'print-modal-backdrop';
 
-  const sections = ['Junior','Middle','Senior','School-wide','Salida','Feriado','Sports'];
-  const types    = ['activity','test','salida','cross','feriado','sports'];
+  const sections = ['Junior','Middle','Senior','School-wide'];
+  const types    = ['activity','test','salida','feriado','sports'];
   const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'School-wide',feriado:'Feriado',sports:'Sports'};
 
   const secChecks = sections.map(s =>
@@ -424,7 +421,7 @@ function openPrintModal() {
     return events.filter(ev => {
       if (ev.date < from || ev.date > to) return false;
       const sk = evSectionKey(ev);
-      const secLabel = sk==='Cross'?'School-wide':sk;
+      const secLabel = sk==='Cross'?'School-wide':(sk==='Sports'?'Sports':(sk==='Salida'?'Salida':sk));
       if (!selSecs.includes(secLabel)) return false;
       const typeKey = sk==='Cross'?'cross':ev.type;
       if (!selTypes.includes(typeKey)) return false;
@@ -490,7 +487,7 @@ function doPrint(filtered) {
 
     byDateMap[date].forEach(e => {
       const sk = evSectionKey(e);
-      const secLabel = sk==='Cross'?'School-wide':sk;
+      const secLabel = sk==='Cross'?'School-wide':(sk==='Sports'?'Sports':(sk==='Salida'?'Salida':sk));
       const typeLabel = typeLabels[e.type] || e.type;
       const color = e.type==='test' ? (sk==='Senior'?'#5C1A2E':'#1a1a18') : (typeColors[e.type]||'#444');
       const classStr = e.classes&&e.classes.length ? e.classes.join(', ') : 'All sections';
@@ -725,7 +722,7 @@ let nextId = 1;
 let cur = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
 let viewMode = 'month';
 let weekOff  = 0;
-let activeSec  = new Set(['Junior','Middle','Senior','Salida','Cross','Sports']);
+let activeSec  = new Set(['Junior','Middle','Senior','Cross']);
 let activeType = new Set(['activity','test','salida','cross','feriado','sports']);
 
 function loadEvents() {
@@ -797,7 +794,8 @@ function visible() {
   return events.filter(e => {
     const sk = evSectionKey(e);
     if (sk==='Feriado') return activeType.has('feriado');
-    if (sk==='Sports')  return activeSec.has('Sports') && activeType.has('sports');
+    if (sk==='Sports')  return activeType.has('sports');
+    if (sk==='Salida')  return activeType.has('salida');
     const typeKey = (sk==='Cross')?'cross':e.type;
     return activeSec.has(sk)&&activeType.has(typeKey);
   });
@@ -1315,8 +1313,8 @@ function openPrintModal() {
   backdrop.className = 'modal-backdrop';
   backdrop.id = 'print-modal-backdrop';
 
-  const sections = ['Junior','Middle','Senior','School-wide','Salida','Feriado','Sports'];
-  const types    = ['activity','test','salida','cross','feriado','sports'];
+  const sections = ['Junior','Middle','Senior','School-wide'];
+  const types    = ['activity','test','salida','feriado','sports'];
   const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'School-wide',feriado:'Feriado',sports:'Sports'};
 
   const secChecks = sections.map(s =>
@@ -1357,7 +1355,7 @@ function openPrintModal() {
     return events.filter(ev => {
       if (ev.date < from || ev.date > to) return false;
       const sk = evSectionKey(ev);
-      const secLabel = sk==='Cross'?'School-wide':sk;
+      const secLabel = sk==='Cross'?'School-wide':(sk==='Sports'?'Sports':(sk==='Salida'?'Salida':sk));
       if (!selSecs.includes(secLabel)) return false;
       const typeKey = sk==='Cross'?'cross':ev.type;
       if (!selTypes.includes(typeKey)) return false;
@@ -1423,7 +1421,7 @@ function doPrint(filtered) {
 
     byDateMap[date].forEach(e => {
       const sk = evSectionKey(e);
-      const secLabel = sk==='Cross'?'School-wide':sk;
+      const secLabel = sk==='Cross'?'School-wide':(sk==='Sports'?'Sports':(sk==='Salida'?'Salida':sk));
       const typeLabel = typeLabels[e.type] || e.type;
       const color = e.type==='test' ? (sk==='Senior'?'#5C1A2E':'#1a1a18') : (typeColors[e.type]||'#444');
       const classStr = e.classes&&e.classes.length ? e.classes.join(', ') : 'All sections';
