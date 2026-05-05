@@ -72,6 +72,8 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 .p-middle { background:#E1F5EE; color:#085041; border-color:#5DCAA5; }
 .p-senior { background:#FAEEDA; color:#633806; border-color:#EF9F27; }
 .p-salida { background:#FBEAF0; color:#72243E; border-color:#ED93B1; }
+.p-sports { background:#1B4FD8; color:#ffffff; border-color:#1240B0; font-weight:500; }
+.ev-sports { background:#1B4FD8; color:#ffffff; border:0.5px solid #1240B0; font-weight:500; }
 .p-cross  { background:#D85A30; color:#ffffff; border-color:#993C1D; font-weight:500; }
 
 /* Event chips — section color, type indicated by shade */
@@ -82,7 +84,7 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 .ev-senior-act { background:#FAEEDA; color:#633806; border:0.5px solid #EF9F27; }
 .ev-senior-test { background:#5C1A2E; color:#F9E4EC; border:0.5px solid #3D0F1E; }
 .ev-salida { background:#FBEAF0; color:#72243E; border:0.5px solid #ED93B1; }
-/* Cross School — bright coral, stands out against all section colours */
+/* School-wide — bright coral, stands out against all section colours */
 .ev-cross { background:#D85A30; color:#ffffff; border:0.5px solid #993C1D; font-weight:500; letter-spacing:0.01em; }
 
 .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-tertiary); font-size: 13px; border: 0.5px dashed var(--border-mid); border-radius: var(--radius-lg); }
@@ -307,15 +309,17 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
     <span class="pill p-middle" data-f="sec" data-v="Middle">Middle</span>
     <span class="pill p-senior" data-f="sec" data-v="Senior">Senior</span>
     <span class="pill p-salida" data-f="sec" data-v="Salida">Salidas</span>
-    <span class="pill p-cross" data-f="sec" data-v="Cross">Cross School</span>
+    <span class="pill p-cross" data-f="sec" data-v="Cross">School-wide</span>
+    <span class="pill p-sports" data-f="sec" data-v="Sports">Sports</span>
   </div>
   <div class="filter-row">
     <span class="filter-label">Type</span>
     <span class="pill" style="background:#F1EFE8;color:#444441;border-color:#B4B2A9" data-f="type" data-v="activity">Activity</span>
     <span class="pill" style="background:#444441;color:#F1EFE8;border-color:#2C2C2A" data-f="type" data-v="test">Test</span>
     <span class="pill p-salida" data-f="type" data-v="salida">Salida</span>
-    <span class="pill p-cross" data-f="type" data-v="cross">Cross School</span>
+    <span class="pill p-cross" data-f="type" data-v="cross">School-wide</span>
     <span class="pill" style="background:#1A6B35;color:#ffffff;border-color:#145228;font-weight:500" data-f="type" data-v="feriado">Feriado</span>
+    <span class="pill p-sports" data-f="type" data-v="sports">Sports</span>
   </div>
 
   <div id="cal-view" style="margin-top:1rem"></div>
@@ -378,9 +382,9 @@ function openPrintModal() {
   backdrop.className = 'modal-backdrop';
   backdrop.id = 'print-modal-backdrop';
 
-  const sections = ['Junior','Middle','Senior','Cross School','Salida','Feriado'];
-  const types    = ['activity','test','salida','cross','feriado'];
-  const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'Cross School',feriado:'Feriado'};
+  const sections = ['Junior','Middle','Senior','School-wide','Salida','Feriado','Sports'];
+  const types    = ['activity','test','salida','cross','feriado','sports'];
+  const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'School-wide',feriado:'Feriado',sports:'Sports'};
 
   const secChecks = sections.map(s =>
     '<label class="print-check"><input type="checkbox" class="psc" value="'+s+'" checked> '+s+'</label>'
@@ -420,7 +424,7 @@ function openPrintModal() {
     return events.filter(ev => {
       if (ev.date < from || ev.date > to) return false;
       const sk = evSectionKey(ev);
-      const secLabel = sk==='Cross'?'Cross School':sk;
+      const secLabel = sk==='Cross'?'School-wide':sk;
       if (!selSecs.includes(secLabel)) return false;
       const typeKey = sk==='Cross'?'cross':ev.type;
       if (!selTypes.includes(typeKey)) return false;
@@ -457,10 +461,10 @@ function openPrintModal() {
 }
 
 function doPrint(filtered) {
-  const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'Cross School',feriado:'Feriado'};
+  const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'School-wide',feriado:'Feriado',sports:'Sports'};
   const typeColors = {
     activity:'#1A6B35', test:'#1a1a18', salida:'#72243E',
-    cross:'#D85A30', feriado:'#1A6B35'
+    cross:'#D85A30', feriado:'#1A6B35', sports:'#1B4FD8'
   };
 
   // Group by date
@@ -486,7 +490,7 @@ function doPrint(filtered) {
 
     byDateMap[date].forEach(e => {
       const sk = evSectionKey(e);
-      const secLabel = sk==='Cross'?'Cross School':sk;
+      const secLabel = sk==='Cross'?'School-wide':sk;
       const typeLabel = typeLabels[e.type] || e.type;
       const color = e.type==='test' ? (sk==='Senior'?'#5C1A2E':'#1a1a18') : (typeColors[e.type]||'#444');
       const classStr = e.classes&&e.classes.length ? e.classes.join(', ') : 'All sections';
@@ -721,8 +725,8 @@ let nextId = 1;
 let cur = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
 let viewMode = 'month';
 let weekOff  = 0;
-let activeSec  = new Set(['Junior','Middle','Senior','Salida','Cross']);
-let activeType = new Set(['activity','test','salida','cross','feriado']);
+let activeSec  = new Set(['Junior','Middle','Senior','Salida','Cross','Sports']);
+let activeType = new Set(['activity','test','salida','cross','feriado','sports']);
 
 function loadEvents() {
   setSyncStatus('loading', 'Loading events...');
@@ -755,6 +759,7 @@ function isCrossSchool(e) {
 }
 
 function evChipClass(e) {
+  if (e.type==='sports') return 'ev-sports';
   if (e.type==='feriado') return 'ev-feriado';
   if (e.type==='cross'||isCrossSchool(e)) return 'ev-cross';
   if (e.type==='salida') return 'ev-salida';
@@ -766,6 +771,7 @@ function evChipClass(e) {
 }
 
 function evSectionKey(e) {
+  if (e.type==='sports') return 'Sports';
   if (e.type==='feriado') return 'Feriado';
   if (e.type==='cross'||isCrossSchool(e)) return 'Cross';
   if (!e.classes||e.classes.length===0) return e.type==='salida'?'Salida':'Junior';
@@ -791,6 +797,7 @@ function visible() {
   return events.filter(e => {
     const sk = evSectionKey(e);
     if (sk==='Feriado') return activeType.has('feriado');
+    if (sk==='Sports')  return activeSec.has('Sports') && activeType.has('sports');
     const typeKey = (sk==='Cross')?'cross':e.type;
     return activeSec.has(sk)&&activeType.has(typeKey);
   });
@@ -810,6 +817,7 @@ function eventPriority(e) {
   const sk = evSectionKey(e);
   if (sk==='Feriado') return -1;
   if (sk==='Cross') return 0;
+  if (sk==='Sports') return 0.5;
   if (e.type==='test') return 3;
   if (!e.classes||e.classes.length===0) return 1;
   if (isWholeSection(e)) return 1;
@@ -839,9 +847,9 @@ function showDetail(evId, anchorEl) {
   const chips = (e.classes||[]).map(c=>'<span class="class-chip">'+c+'</span>').join('');
   const isCross = e.type==='cross'||isCrossSchool(e);
   const isFeriado = e.type==='feriado';
-  const secDisplay = isCross?'Cross School (all sections)':isFeriado?'Whole school':evSectionKey(e);
+  const secDisplay = isCross?'School-wide (all sections)':isFeriado?'Whole school':evSectionKey(e);
   const dateDisplay = e.groupId ? (e.rangeStart+' \u2192 '+e.rangeEnd) : e.date;
-  const typeDisplay = isCross?'Cross School':(e.type.charAt(0).toUpperCase()+e.type.slice(1));
+  const typeDisplay = isCross?'School-wide':(e.type==='sports'?'Sports':e.type.charAt(0).toUpperCase()+e.type.slice(1));
   let html = '<button class="detail-close" onclick="closePopup()">&#x2715;</button>'
     +'<h4>'+e.title+'</h4>'
     +'<div class="detail-row"><span class="detail-label">Date</span><span class="detail-val">'+dateDisplay+'</span></div>'
@@ -955,7 +963,7 @@ function renderMonth() {
     html+='<div class="day-cell'+(c.other?' other':'')+(isT?' today':'')+(hasFeriado?' feriado':'')+'"><div class="day-cell-top"><div class="day-num">'+c.d+'</div>';
     topEvs.slice(0,3).forEach(e=>{
       const sk=evSectionKey(e);
-      const lbl=sk==='Cross'?'Cross School: '+e.title:(classesLabel(e)?classesLabel(e)+': '+e.title:e.title);
+      const lbl=sk==='Cross'?'School-wide: '+e.title:(classesLabel(e)?classesLabel(e)+': '+e.title:e.title);
       const rangeClass=e.rangePosition?' ev-range-'+e.rangePosition:'';
       html+='<div class="ev-wrap"><span class="ev '+evChipClass(e)+rangeClass+'" onclick="showDetail('+e.id+',this)" title="'+e.title+'">'+lbl+'</span></div>';
     });
@@ -995,8 +1003,8 @@ function renderWeek() {
     evs.forEach(e=>{
       const sk=evSectionKey(e);
       const isCross=sk==='Cross';
-      const classInfo=isCross?'Cross School \u2014 all sections':(e.classes&&e.classes.length?sk+' \u00b7 '+fullClassesLabel(e):sk);
-      html+='<div class="wev-wrap"><div class="wev '+evChipClass(e)+'" onclick="showDetail('+e.id+',this)"><strong>'+e.title+'</strong><br><span style="font-size:10px;opacity:0.85">'+classInfo+' \u00b7 '+(isCross?'cross school':e.type)+'</span></div></div>';
+      const classInfo=isCross?'School-wide \u2014 all sections':(e.classes&&e.classes.length?sk+' \u00b7 '+fullClassesLabel(e):sk);
+      html+='<div class="wev-wrap"><div class="wev '+evChipClass(e)+'" onclick="showDetail('+e.id+',this)"><strong>'+e.title+'</strong><br><span style="font-size:10px;opacity:0.85">'+classInfo+' \u00b7 '+(isCross?'school-wide':e.type)+'</span></div></div>';
     });
     html+='</div></div>';
   }
@@ -1016,8 +1024,9 @@ function renderLegend() {
     +'<div class="litem"><div class="ldot" style="background:#FAEEDA;border:0.5px solid #EF9F27"></div>Senior activity</div>'
     +'<div class="litem"><div class="ldot" style="background:#5C1A2E"></div>Senior test</div>'
     +'<div class="litem"><div class="ldot" style="background:#FBEAF0;border:0.5px solid #ED93B1"></div>Salida</div>'
-    +'<div class="litem"><div class="ldot" style="background:#D85A30;border:0.5px solid #993C1D"></div>Cross School</div>'
+    +'<div class="litem"><div class="ldot" style="background:#D85A30;border:0.5px solid #993C1D"></div>School-wide</div>'
     +'<div class="litem"><div class="ldot" style="background:#1A6B35"></div>Feriado (day painted green)</div>'
+    +'<div class="litem"><div class="ldot" style="background:#1B4FD8;border:0.5px solid #1240B0"></div>Sports</div>'
     +'</div>'
     +'<div class="legend-title">Classes &nbsp;&middot;&nbsp; Click any event to see full details</div>'
     +'<div class="legend-row">'
@@ -1091,12 +1100,13 @@ function openModal() {
     +'<option value="activity">Activity</option>'
     +'<option value="test">Test</option>'
     +'<option value="salida">Salida</option>'
-    +'<option value="cross">Cross School activity</option>'
+    +'<option value="cross">School-wide activity</option>'
     +'<option value="feriado">Feriado (school closed)</option>'
+    +'<option value="sports">Sports</option>'
     +'</select>'
     +'<div id="class-selector-wrap">'
     +'<label style="margin-bottom:8px">Classes <span id="class-selector-hint" style="font-weight:400;color:var(--text-tertiary)">(select all that apply)</span></label>'
-    +'<div id="cross-notice" style="display:none;font-size:11px;color:#993C1D;background:#FAECE7;border:0.5px solid #F0997B;border-radius:6px;padding:7px 10px;margin-bottom:8px">Cross School activities involve all three sections.</div>'
+    +'<div id="cross-notice" style="display:none;font-size:11px;color:#993C1D;background:#FAECE7;border:0.5px solid #F0997B;border-radius:6px;padding:7px 10px;margin-bottom:8px">School-wide activities involve all three sections.</div>'
     +buildClassSelector()
     +'</div>'
     +'<div class="modal-actions">'
@@ -1131,7 +1141,7 @@ function openModal() {
 
   window.onTypeChange = function() {
     const t=document.getElementById('ev-type').value;
-    document.getElementById('class-selector-wrap').style.display=(t==='feriado')?'none':'block';
+    document.getElementById('class-selector-wrap').style.display=(t==='feriado'||t==='sports')?'none':'block';
     document.getElementById('cross-notice').style.display=(t==='cross')?'block':'none';
     const hint=document.getElementById('class-selector-hint');
     if(hint) hint.textContent=t==='salida'?'(select participating classes, or leave blank for whole school)':'(select all that apply)';
@@ -1143,7 +1153,7 @@ function openModal() {
     const type=document.getElementById('ev-type').value;
     const classes=getSelectedClasses();
     if(!title){ alert('Please enter a title.'); return; }
-    if(type!=='cross'&&type!=='salida'&&type!=='feriado'&&classes.length===0){ alert('Please select at least one class.'); return; }
+    if(type!=='cross'&&type!=='salida'&&type!=='feriado'&&type!=='sports'&&classes.length===0){ alert('Please select at least one class.'); return; }
 
     let newEvents=[];
     if(dateMode==='single'){
@@ -1305,9 +1315,9 @@ function openPrintModal() {
   backdrop.className = 'modal-backdrop';
   backdrop.id = 'print-modal-backdrop';
 
-  const sections = ['Junior','Middle','Senior','Cross School','Salida','Feriado'];
-  const types    = ['activity','test','salida','cross','feriado'];
-  const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'Cross School',feriado:'Feriado'};
+  const sections = ['Junior','Middle','Senior','School-wide','Salida','Feriado','Sports'];
+  const types    = ['activity','test','salida','cross','feriado','sports'];
+  const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'School-wide',feriado:'Feriado',sports:'Sports'};
 
   const secChecks = sections.map(s =>
     '<label class="print-check"><input type="checkbox" class="psc" value="'+s+'" checked> '+s+'</label>'
@@ -1347,7 +1357,7 @@ function openPrintModal() {
     return events.filter(ev => {
       if (ev.date < from || ev.date > to) return false;
       const sk = evSectionKey(ev);
-      const secLabel = sk==='Cross'?'Cross School':sk;
+      const secLabel = sk==='Cross'?'School-wide':sk;
       if (!selSecs.includes(secLabel)) return false;
       const typeKey = sk==='Cross'?'cross':ev.type;
       if (!selTypes.includes(typeKey)) return false;
@@ -1384,10 +1394,10 @@ function openPrintModal() {
 }
 
 function doPrint(filtered) {
-  const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'Cross School',feriado:'Feriado'};
+  const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'School-wide',feriado:'Feriado',sports:'Sports'};
   const typeColors = {
     activity:'#1A6B35', test:'#1a1a18', salida:'#72243E',
-    cross:'#D85A30', feriado:'#1A6B35'
+    cross:'#D85A30', feriado:'#1A6B35', sports:'#1B4FD8'
   };
 
   // Group by date
@@ -1413,7 +1423,7 @@ function doPrint(filtered) {
 
     byDateMap[date].forEach(e => {
       const sk = evSectionKey(e);
-      const secLabel = sk==='Cross'?'Cross School':sk;
+      const secLabel = sk==='Cross'?'School-wide':sk;
       const typeLabel = typeLabels[e.type] || e.type;
       const color = e.type==='test' ? (sk==='Senior'?'#5C1A2E':'#1a1a18') : (typeColors[e.type]||'#444');
       const classStr = e.classes&&e.classes.length ? e.classes.join(', ') : 'All sections';
