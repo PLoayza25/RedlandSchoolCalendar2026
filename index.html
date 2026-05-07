@@ -74,6 +74,9 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 .p-salida { background:#FBEAF0; color:#72243E; border-color:#ED93B1; }
 .p-sports { background:#1B4FD8; color:#ffffff; border-color:#1240B0; font-weight:500; }
 .ev-sports { background:#1B4FD8; color:#ffffff; border:0.5px solid #1240B0; font-weight:500; }
+/* Middle+Senior combined — teal-blue */
+.ev-ms { background:#0E7490; color:#ffffff; border:0.5px solid #0C5F73; font-weight:500; }
+.p-ms  { background:#0E7490; color:#ffffff; border-color:#0C5F73; font-weight:500; }
 .p-cross  { background:#D85A30; color:#ffffff; border-color:#993C1D; font-weight:500; }
 
 /* Event chips — section color, type indicated by shade */
@@ -755,10 +758,19 @@ function isCrossSchool(e) {
   return secs.has('Junior')&&secs.has('Middle')&&secs.has('Senior');
 }
 
+function isMiddleSenior(e) {
+  // True when event covers ONLY Middle and Senior classes (no Junior)
+  if (!e.classes||e.classes.length===0) return false;
+  if (e.type==='cross'||e.type==='feriado'||e.type==='sports'||e.type==='salida') return false;
+  const secs = new Set(e.classes.map(c=>classSection(c)));
+  return secs.has('Middle')&&secs.has('Senior')&&!secs.has('Junior');
+}
+
 function evChipClass(e) {
   if (e.type==='sports') return 'ev-sports';
   if (e.type==='feriado') return 'ev-feriado';
   if (e.type==='cross'||isCrossSchool(e)) return 'ev-cross';
+  if (isMiddleSenior(e)) return 'ev-ms';
   if (e.type==='salida') return 'ev-salida';
   if (!e.classes||e.classes.length===0) return 'ev-junior-act';
   const sec = classSection(e.classes[0]);
@@ -769,7 +781,6 @@ function evChipClass(e) {
 
 function evSectionKey(e) {
   if (e.type==='feriado') return 'Feriado';
-  // Sports with no classes = all sections; with classes = derive section from classes
   if (e.type==='sports') {
     if (!e.classes||e.classes.length===0) return 'Cross';
     const secs = new Set(e.classes.map(c=>classSection(c)));
@@ -777,6 +788,7 @@ function evSectionKey(e) {
     return classSection(e.classes[0]);
   }
   if (e.type==='cross'||isCrossSchool(e)) return 'Cross';
+  if (isMiddleSenior(e)) return 'MiddleSenior';
   if (!e.classes||e.classes.length===0) return e.type==='salida'?'Salida':'Junior';
   if (e.type==='salida') {
     const secs = new Set(e.classes.map(c=>classSection(c)));
@@ -801,8 +813,9 @@ function visible() {
     const sk = evSectionKey(e);
     if (sk==='Feriado') return activeType.has('feriado');
     if (sk==='Salida')  return activeType.has('salida');
-    // sports uses section filter + sports type filter
     if (e.type==='sports') return activeSec.has(sk) && activeType.has('sports');
+    // Middle+Senior events: show if Middle OR Senior is active
+    if (sk==='MiddleSenior') return (activeSec.has('Middle')||activeSec.has('Senior')) && activeType.has(e.type);
     const typeKey = (sk==='Cross')?'cross':e.type;
     return activeSec.has(sk)&&activeType.has(typeKey);
   });
@@ -827,7 +840,7 @@ function isWholeSection(e) {
     4  Senior activities + sports  (by grade)
     5  Tests (by grade across all sections)
 */
-const SEC_ORDER = {Cross:0, Salida:1, Junior:2, Middle:3, Senior:4, Feriado:-1};
+const SEC_ORDER = {Cross:0, MiddleSenior:0.5, Salida:1, Junior:2, Middle:3, Senior:4, Feriado:-1};
 
 function eventPriority(e) {
   const sk = evSectionKey(e);
@@ -859,21 +872,31 @@ function showDetail(evId, anchorEl) {
   const popup = document.createElement('div');
   popup.className = 'detail-popup';
   const chips = (e.classes||[]).map(c=>'<span class="class-chip">'+c+'</span>').join('');
-  const isCross = e.type==='cross'||isCrossSchool(e)||(e.type==='sports'&&evSectionKey(e)==='Cross');
+  const sk = evSectionKey(e);
+  const isCross   = sk==='Cross';
   const isFeriado = e.type==='feriado';
-  const secDisplay = isCross?'All sections (all sections)':isFeriado?'Whole school':evSectionKey(e);
+  const isMS      = sk==='MiddleSenior';
+  const secDisplay = isCross?'All sections':isFeriado?'Whole school':isMS?'Middle + Senior':sk;
   const dateDisplay = e.groupId ? (e.rangeStart+' \u2192 '+e.rangeEnd) : e.date;
   const typeDisplay = isCross?'All sections':(e.type==='sports'?'Sports':e.type.charAt(0).toUpperCase()+e.type.slice(1));
+  // For Middle+Senior, show "Middle + Senior" instead of listing all classes
+  let classesDisplay;
+  if (isCross) { classesDisplay = chips || '<span class="detail-val">All sections</span>'; }
+  else if (isMS) { classesDisplay = '<span class="detail-val">Middle + Senior</span>'; }
+  else { classesDisplay = chips || '<span class="detail-val">All sections</span>'; }
   let html = '<button class="detail-close" onclick="closePopup()">&#x2715;</button>'
     +'<h4>'+e.title+'</h4>'
     +'<div class="detail-row"><span class="detail-label">Date</span><span class="detail-val">'+dateDisplay+'</span></div>'
     +'<div class="detail-row"><span class="detail-label">Type</span><span class="detail-val">'+typeDisplay+'</span></div>'
     +'<div class="detail-row"><span class="detail-label">Section</span><span class="detail-val">'+secDisplay+'</span></div>';
   if (e.type!=='cross'||chips) {
-    html += '<div class="detail-row"><span class="detail-label">Classes</span><div><div class="class-chips">'+(chips||'<span class="detail-val">All sections</span>')+'</div></div></div>';
+    html += '<div class="detail-row"><span class="detail-label">Classes</span><div><div class="class-chips">'+classesDisplay+'</div></div></div>';
   }
   if (isEditor()) {
-    html += '<div style="margin-top:10px;display:flex;justify-content:flex-end"><button class="btn-danger" style="font-size:12px;padding:5px 12px" onclick="closePopup();confirmDelete('+e.id+')">Delete</button></div>';
+    html += '<div style="margin-top:10px;display:flex;gap:6px;justify-content:flex-end">'
+      +'<button class="btn-cancel" style="font-size:12px;padding:5px 12px" onclick="closePopup();openEditModal('+e.id+')">&#9998; Edit</button>'
+      +'<button class="btn-danger" style="font-size:12px;padding:5px 12px" onclick="closePopup();confirmDelete('+e.id+')">Delete</button>'
+      +'</div>';
   }
   popup.innerHTML = html;
   document.body.appendChild(popup);
@@ -1040,6 +1063,7 @@ function renderLegend() {
     +'<div class="litem"><div class="ldot" style="background:#FBEAF0;border:0.5px solid #ED93B1"></div>Salida</div>'
     +'<div class="litem"><div class="ldot" style="background:#D85A30;border:0.5px solid #993C1D"></div>All sections</div>'
     +'<div class="litem"><div class="ldot" style="background:#1A6B35"></div>Feriado (day painted green)</div>'
+    +'<div class="litem"><div class="ldot" style="background:#0E7490;border:0.5px solid #0C5F73"></div>Middle+Senior</div>'
     +'<div class="litem"><div class="ldot" style="background:#1B4FD8;border:0.5px solid #1240B0"></div>Sports</div>'
     +'</div>'
     +'<div class="legend-title">Classes &nbsp;&middot;&nbsp; Click any event to see full details</div>'
@@ -1089,6 +1113,109 @@ function clearSection(sec) { document.querySelectorAll('#cg-'+sec+' .class-toggl
 function getSelectedClasses() { return [...document.querySelectorAll('.class-toggle.selected')].map(el=>el.dataset.class); }
 
 /* ── Add event modal ─────────────────────────────────────────── */
+function openEditModal(id) {
+  if (!isEditor()) return;
+  const ev = events.find(e=>e.id===id);
+  if (!ev) return;
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+
+  // Build date mode — if it's part of a range, show info
+  const isRange = !!ev.groupId;
+  const dateSection = isRange
+    ? '<div style="font-size:12px;color:var(--text-secondary);background:var(--bg-secondary);border-radius:var(--border-radius-md);padding:7px 10px;margin-bottom:10px">&#9432; This is a range event ('
+      +ev.rangeStart+' → '+ev.rangeEnd+'). Editing will update <strong>this day only</strong>. To edit the full range, delete it and re-add.</div>'
+      +'<label>Date</label><input type="date" id="ev-date-edit" value="'+ev.date+'" readonly style="opacity:0.6">'
+    : '<label>Date</label><input type="date" id="ev-date-edit" value="'+ev.date+'">';
+
+  const typeOpts = ['activity','test','salida','cross','feriado','sports']
+    .map(t=>'<option value="'+t+'"'+(ev.type===t?' selected':'')+'>'+
+      ({activity:'Activity',test:'Test',salida:'Salida',cross:'All sections activity',feriado:'Feriado (school closed)',sports:'Sports'}[t]||t)+'</option>').join('');
+
+  backdrop.innerHTML = '<div class="modal">'
+    +'<h3>Edit event</h3>'
+    +'<label>Title</label><input type="text" id="ev-title-edit" value="'+ev.title.replace(/"/g,'&quot;')+'">'
+    +'<label style="margin-top:10px;display:block">Date</label>'
+    + (isRange
+        ? '<div style="font-size:12px;color:var(--text-secondary);background:var(--bg-secondary);border-radius:6px;padding:7px 10px;margin-bottom:10px">&#9432; Range event ('+ev.rangeStart+' → '+ev.rangeEnd+'). Only this day&#39;s title and classes can be edited.</div><input type="date" id="ev-date-edit" value="'+ev.date+'" disabled style="opacity:0.6;width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border-mid);border-radius:var(--border-radius-md);font-family:var(--font)">'
+        : '<input type="date" id="ev-date-edit" value="'+ev.date+'" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border-mid);border-radius:var(--border-radius-md);font-family:var(--font);background:var(--bg-primary);color:var(--text-primary);outline:none">')
+    +'<label style="margin-top:10px;display:block">Type</label>'
+    +'<select id="ev-type-edit" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border-mid);border-radius:var(--border-radius-md);font-family:var(--font);background:var(--bg-primary);color:var(--text-primary);outline:none">'+typeOpts+'</select>'
+    +'<div id="edit-class-wrap">'
+    +'<label style="margin-top:10px;display:block;margin-bottom:8px">Classes <span style="font-weight:400;color:var(--text-tertiary)">(select all that apply)</span></label>'
+    +'<div id="cross-notice-edit" style="display:none;font-size:11px;color:#993C1D;background:#FAECE7;border:0.5px solid #F0997B;border-radius:6px;padding:7px 10px;margin-bottom:8px">All sections activities involve all three sections.</div>'
+    +buildClassSelectorEdit(ev.classes||[])
+    +'</div>'
+    +'<div class="modal-actions">'
+    +'<button class="btn-cancel" id="edit-cancel">Cancel</button>'
+    +'<button class="btn-save" id="edit-save">Save changes</button>'
+    +'</div></div>';
+  document.body.appendChild(backdrop);
+
+  document.getElementById('ev-type-edit').onchange = function() {
+    const t = this.value;
+    document.getElementById('edit-class-wrap').style.display = (t==='feriado'||t==='sports')?'none':'block';
+    document.getElementById('cross-notice-edit').style.display = t==='cross'?'block':'none';
+  };
+  // trigger once to set initial state
+  document.getElementById('ev-type-edit').dispatchEvent(new Event('change'));
+
+  document.getElementById('edit-cancel').onclick = ()=>backdrop.remove();
+  document.getElementById('edit-save').onclick = ()=>{
+    const title  = document.getElementById('ev-title-edit').value.trim();
+    const date   = document.getElementById('ev-date-edit').value;
+    const type   = document.getElementById('ev-type-edit').value;
+    const classes = getSelectedClassesEdit();
+    if (!title) { alert('Please enter a title.'); return; }
+    if (type!=='cross'&&type!=='salida'&&type!=='feriado'&&type!=='sports'&&classes.length===0) {
+      alert('Please select at least one class.'); return;
+    }
+    const updated = { ...ev, title, date, type, classes };
+    backdrop.remove();
+    setSyncStatus('loading','Saving changes...');
+    if (SCRIPT_URL==='PASTE_YOUR_WEB_APP_URL_HERE') {
+      events = events.map(e=>e.id===id?updated:e);
+      render(); showToast('Event updated.'); setSyncStatus('ok','Local mode'); return;
+    }
+    // Delete old + add new (simplest approach for server-side edit)
+    apiCall({action:'deleteEvent',id:id})
+      .then(()=>apiCall({action:'addEvents',events:[updated]}))
+      .then(d=>{
+        if(d.ok){ events=events.map(e=>e.id===id?updated:e); render(); showToast('Event updated.'); setSyncStatus('ok','Synced '+new Date().toLocaleTimeString()); }
+        else showToast('Error saving: '+d.error);
+      }).catch(()=>showToast('Connection error — changes not saved.'));
+  };
+}
+
+function buildClassSelectorEdit(selectedClasses) {
+  let html='';
+  ['Junior','Middle','Senior'].forEach(function(sec) {
+    html+='<div class="class-section-block">'
+      +'<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;">'
+      +'<span class="class-section-title">'+sec+'</span>'
+      +'<button type="button" class="select-all-btn" data-esec="'+sec+'" data-eact="all">All</button>'
+      +'<button type="button" class="select-all-btn" data-esec="'+sec+'" data-eact="none">None</button>'
+      +'</div><div class="class-grid" id="cge-'+sec+'">';
+    CLASSES[sec].forEach(function(c) {
+      const sel = selectedClasses.includes(c);
+      html+='<span class="class-toggle '+sec.toLowerCase()+(sel?' selected':'')+'" data-class="'+c+'" onclick="this.classList.toggle('selected')">'+c+'</span>';
+    });
+    html+='</div></div>';
+  });
+  return html;
+}
+document.addEventListener('click', function(ev) {
+  const btn = ev.target.closest('[data-esec]');
+  if (!btn) return;
+  const sec = btn.dataset.esec;
+  const act = btn.dataset.eact;
+  if (!sec||!act) return;
+  document.querySelectorAll('#cge-'+sec+' .class-toggle').forEach(function(el) {
+    if (act==='all') el.classList.add('selected'); else el.classList.remove('selected');
+  });
+});
+function getSelectedClassesEdit() { return [...document.querySelectorAll('#cge-Junior .class-toggle.selected, #cge-Middle .class-toggle.selected, #cge-Senior .class-toggle.selected')].map(el=>el.dataset.class); }
+
 function openModal() {
   if (!isEditor()) return;
   const backdrop = document.createElement('div');
