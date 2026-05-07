@@ -376,7 +376,10 @@ function setLoginTab(t) {
   document.getElementById('pw-label').textContent = t==='viewer' ? 'Viewer password' : 'Editor password';
   document.getElementById('login-error').textContent = '';
   document.getElementById('pw-input').value = '';
-  /* ── Print / PDF ─────────────────────────────────────────────── */
+  document.getElementById('pw-input').focus();
+}
+
+/* ── Print / PDF ─────────────────────────────────────────────── */
 function openPrintModal() {
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
@@ -524,7 +527,6 @@ function doPrint(filtered) {
 }
 
 document.getElementById('pw-input').focus();
-}
 
 function doLogin() {
   const pw = document.getElementById('pw-input').value;
@@ -1188,21 +1190,22 @@ function openEditModal(id) {
 }
 
 function buildClassSelectorEdit(selectedClasses) {
-  let html='';
+  const parts = [];
   ['Junior','Middle','Senior'].forEach(function(sec) {
-    html+='<div class="class-section-block">'
-      +'<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;">'
-      +'<span class="class-section-title">'+sec+'</span>'
-      +'<button type="button" class="select-all-btn" data-esec="'+sec+'" data-eact="all">All</button>'
-      +'<button type="button" class="select-all-btn" data-esec="'+sec+'" data-eact="none">None</button>'
-      +'</div><div class="class-grid" id="cge-'+sec+'">';
+    parts.push('<div class="class-section-block">');
+    parts.push('<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;">');
+    parts.push('<span class="class-section-title">' + sec + '</span>');
+    parts.push('<button type="button" class="select-all-btn" data-esec="' + sec + '" data-eact="all">All</button>');
+    parts.push('<button type="button" class="select-all-btn" data-esec="' + sec + '" data-eact="none">None</button>');
+    parts.push('</div><div class="class-grid" id="cge-' + sec + '">');
     CLASSES[sec].forEach(function(c) {
       const sel = selectedClasses.includes(c);
-      html+='<span class="class-toggle '+sec.toLowerCase()+(sel?' selected':'')+'" data-class="'+c+'" onclick="this.classList.toggle('selected')">'+c+'</span>';
+      const selCls = sel ? ' selected' : '';
+      parts.push('<span class="class-toggle ' + sec.toLowerCase() + selCls + '" data-class="' + c + '" data-etoggle="1">' + c + '</span>');
     });
-    html+='</div></div>';
+    parts.push('</div></div>');
   });
-  return html;
+  return parts.join('');
 }
 document.addEventListener('click', function(ev) {
   const btn = ev.target.closest('[data-esec]');
