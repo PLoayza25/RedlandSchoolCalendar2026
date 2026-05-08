@@ -1042,8 +1042,9 @@ function renderWeek() {
     evs.forEach(e=>{
       const sk=evSectionKey(e);
       const isCross=sk==='Cross';
-      const classInfo=isCross?'All sections \u2014 all sections':(e.classes&&e.classes.length?sk+' \u00b7 '+fullClassesLabel(e):sk);
-      html+='<div class="wev-wrap"><div class="wev '+evChipClass(e)+'" onclick="showDetail('+e.id+',this)"><strong>'+e.title+'</strong><br><span style="font-size:10px;opacity:0.85">'+classInfo+' \u00b7 '+(isCross?'school-wide':e.type)+'</span></div></div>';
+      const isMS = sk==='MiddleSenior';
+      const classInfo = isCross ? 'All sections' : isMS ? 'Middle & Senior' : (e.classes&&e.classes.length ? sk+' \u00b7 '+fullClassesLabel(e) : sk);
+      html+='<div class="wev-wrap"><div class="wev '+evChipClass(e)+'" onclick="showDetail('+e.id+',this)"><strong>'+e.title+'</strong><br><span style="font-size:10px;opacity:0.85">'+classInfo+' \u00b7 '+(isCross?'all sections':e.type)+'</span></div></div>';
     });
     html+='</div></div>';
   }
