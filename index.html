@@ -655,6 +655,7 @@ function apiCall(payload, useToken) {
       delete window[cbName];
       const s = document.getElementById('jsonp_'+cbName);
       if (s) s.remove();
+      // On timeout, try fetching via a simple GET to see what's happening
       reject(new Error('Request timed out'));
     }, 45000);
 
@@ -666,14 +667,41 @@ function apiCall(payload, useToken) {
       resolve(data);
     };
 
+    // Also register without underscore prefix in case Google strips it
+    const cbNameAlt = cbName.slice(1); // remove leading _
+    window[cbNameAlt] = window[cbName];
+
     const encoded = encodeURIComponent(JSON.stringify(payload));
     const url = SCRIPT_URL + '?callback=' + cbName + '&payload=' + encoded;
     const script = document.createElement('script');
     script.id = 'jsonp_' + cbName;
     script.src = url;
+    script.onload = () => {
+      // Script loaded — if callback hasn't fired after 2s, try direct fetch
+      setTimeout(() => {
+        if (window[cbName]) {
+          // Callback still registered = it didn't fire
+          // Try fetching the URL directly to parse the response
+          fetch(url)
+            .then(r => r.text())
+            .then(text => {
+              const match = text.match(/\{[\s\S]*\}/);
+              if (match) {
+                try {
+                  clearTimeout(timer);
+                  delete window[cbName];
+                  delete window[cbNameAlt];
+                  resolve(JSON.parse(match[0]));
+                } catch(e) {}
+              }
+            }).catch(() => {});
+        }
+      }, 2000);
+    };
     script.onerror = () => {
       clearTimeout(timer);
       delete window[cbName];
+      delete window[cbNameAlt];
       script.remove();
       reject(new Error('Network error'));
     };
