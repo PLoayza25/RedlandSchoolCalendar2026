@@ -645,23 +645,20 @@ function setSyncStatus(state, msg) {
   lbl.textContent = msg;
 }
 
-/* ── API layer — fetch with JSON extraction ──────────────────── */
+/* ── API layer — fetch via CORS proxy ────────────────────────── */
 function apiCall(payload, useToken) {
   if (useToken !== false) payload.token = sessionToken;
   const encoded = encodeURIComponent(JSON.stringify(payload));
-  const url = SCRIPT_URL + '?payload=' + encoded;
-  return fetch(url, {
-    method: 'GET',
-    redirect: 'follow',
-    credentials: 'omit'
-  })
-  .then(r => r.text())
-  .then(text => {
-    // Extract JSON — works whether response is plain JSON or wrapped in callback
-    const m = text.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error('No JSON in response: ' + text.slice(0,100));
-    return JSON.parse(m[0]);
-  });
+  const directUrl = SCRIPT_URL + '?payload=' + encoded;
+  // Use CORS proxy to bypass GitHub Pages → Google CORS restriction
+  const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(directUrl);
+  return fetch(proxyUrl, { method: 'GET' })
+    .then(r => r.text())
+    .then(text => {
+      const m = text.match(/\{[\s\S]*\}/);
+      if (!m) throw new Error('No JSON in response');
+      return JSON.parse(m[0]);
+    });
 }
 
 // For large payloads — split into chunks with retry on failure
