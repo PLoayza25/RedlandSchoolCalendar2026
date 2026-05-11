@@ -353,7 +353,7 @@ const MONTHS = ['January','February','March','April','May','June','July','August
 const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 const CLASSES = {
-  Junior: ['PK','K','1A','1B','2A','2B','3A','3B','4A','4B'],
+  Junior: ['PK','K','1A','1B','2B','2G','3A','3B','4A','4B'],
   Middle: ['5A','5B','6A','6B','7A','7B','8A','8B'],
   Senior: ['IA','IB','IIA','IIB','IIIA','IIIB','IVA','IVB']
 };
@@ -823,7 +823,7 @@ function visible() {
   });
 }
 
-const GRADE_ORDER = ['PK','K','1A','1B','2A','2B','3A','3B','4A','4B','5A','5B','6A','6B','7A','7B','8A','8B','IA','IB','IIA','IIB','IIIA','IIIB','IVA','IVB'];
+const GRADE_ORDER = ['PK','K','1A','1B','2B','2G','3A','3B','4A','4B','5A','5B','6A','6B','7A','7B','8A','8B','IA','IB','IIA','IIB','IIIA','IIIB','IVA','IVB'];
 function gradeRank(e) {
   if (!e.classes||e.classes.length===0) return 999;
   const ranks = e.classes.map(c=>{const i=GRADE_ORDER.indexOf(c);return i===-1?999:i;});
@@ -842,15 +842,23 @@ function isWholeSection(e) {
     4  Senior activities + sports  (by grade)
     5  Tests (by grade across all sections)
 */
-const SEC_ORDER = {Cross:0, MiddleSenior:0.5, Salida:1, Junior:2, Middle:3, Senior:4, Feriado:-1};
+// Section priority: Feriado → All sections → Middle&Senior → Junior → Middle → Senior → Salida → Tests
+const SEC_ORDER = {Cross:0, MiddleSenior:1, Junior:2, Middle:3, Senior:4, Salida:5, Feriado:-1};
 
 function eventPriority(e) {
   const sk = evSectionKey(e);
   if (sk==='Feriado') return -1;
   if (sk==='Cross')   return 0;
-  if (sk==='Salida')  return 1;
-  if (e.type==='test') return 5;
+  if (sk==='MiddleSenior') return 1;
+  if (sk==='Salida')  return 5;
+  if (e.type==='test') return 6;
   return (SEC_ORDER[sk] !== undefined ? SEC_ORDER[sk] : 4);
+}
+
+function timeRank(e) {
+  // Returns sortable time string; events with no time sort after timed events
+  if (!e.time) return '99:99';
+  return e.time;
 }
 
 function byDate(d) {
@@ -858,7 +866,11 @@ function byDate(d) {
   return evs.sort((a,b)=>{
     const pa=eventPriority(a), pb=eventPriority(b);
     if (pa!==pb) return pa-pb;
-    // Same priority — sort by lowest grade ascending
+    // Within tests: sort by grade
+    if (pa===6) return gradeRank(a)-gradeRank(b);
+    // Within same section group: sort by time first, then by grade
+    const ta=timeRank(a), tb=timeRank(b);
+    if (ta!==tb) return ta.localeCompare(tb);
     return gradeRank(a)-gradeRank(b);
   });
 }
@@ -880,6 +892,7 @@ function showDetail(evId, anchorEl) {
   const isMS      = sk==='MiddleSenior';
   const secDisplay = isCross?'All sections':isFeriado?'Whole school':isMS?'Middle + Senior':sk;
   const dateDisplay = e.groupId ? (e.rangeStart+' \u2192 '+e.rangeEnd) : e.date;
+  const timeDisplay = e.time ? e.time : null;
   const typeDisplay = isCross?'All sections':(e.type==='sports'?'Sports':e.type.charAt(0).toUpperCase()+e.type.slice(1));
   // For Middle+Senior, show "Middle + Senior" instead of listing all classes
   let classesDisplay;
@@ -888,7 +901,7 @@ function showDetail(evId, anchorEl) {
   else { classesDisplay = chips || '<span class="detail-val">All sections</span>'; }
   let html = '<button class="detail-close" onclick="closePopup()">&#x2715;</button>'
     +'<h4>'+e.title+'</h4>'
-    +'<div class="detail-row"><span class="detail-label">Date</span><span class="detail-val">'+dateDisplay+'</span></div>'
+    +'<div class="detail-row"><span class="detail-label">Date</span><span class="detail-val">'+dateDisplay+(timeDisplay?' \u00b7 '+timeDisplay:'')+'</span></div>'
     +'<div class="detail-row"><span class="detail-label">Type</span><span class="detail-val">'+typeDisplay+'</span></div>'
     +'<div class="detail-row"><span class="detail-label">Section</span><span class="detail-val">'+secDisplay+'</span></div>';
   if (e.type!=='cross'||chips) {
@@ -1004,7 +1017,7 @@ function renderMonth() {
       const sk=evSectionKey(e);
       const lbl=sk==='Cross'?'All sections: '+e.title:(classesLabel(e)?classesLabel(e)+': '+e.title:e.title);
       const rangeClass=e.rangePosition?' ev-range-'+e.rangePosition:'';
-      html+='<div class="ev-wrap"><span class="ev '+evChipClass(e)+rangeClass+'" onclick="showDetail('+e.id+',this)" title="'+e.title+'">'+lbl+'</span></div>';
+      html+='<div class="ev-wrap"><span class="ev '+evChipClass(e)+rangeClass+'" onclick="showDetail('+e.id+',this)" title="'+e.title+'">'+lblWithTime+'</span></div>';
     });
     if(topEvs.length>3) html+='<div class="more">+'+(topEvs.length-3)+' more</div>';
     html+='</div>';
@@ -1014,7 +1027,7 @@ function renderMonth() {
       testEvs.slice(0,2).forEach(e=>{
         const lbl=classesLabel(e)?classesLabel(e)+': '+e.title:e.title;
         const rangeClass=e.rangePosition?' ev-range-'+e.rangePosition:'';
-        html+='<div class="ev-wrap"><span class="ev '+evChipClass(e)+rangeClass+'" onclick="showDetail('+e.id+',this)" title="'+e.title+'">'+lbl+'</span></div>';
+        html+='<div class="ev-wrap"><span class="ev '+evChipClass(e)+rangeClass+'" onclick="showDetail('+e.id+',this)" title="'+e.title+'">'+lblWithTime+'</span></div>';
       });
       if(testEvs.length>2) html+='<div class="more">+'+(testEvs.length-2)+' more</div>';
     }
@@ -1044,7 +1057,8 @@ function renderWeek() {
       const isCross=sk==='Cross';
       const isMS = sk==='MiddleSenior';
       const classInfo = isCross ? 'All sections' : isMS ? 'Middle & Senior' : (e.classes&&e.classes.length ? sk+' \u00b7 '+fullClassesLabel(e) : sk);
-      html+='<div class="wev-wrap"><div class="wev '+evChipClass(e)+'" onclick="showDetail('+e.id+',this)"><strong>'+e.title+'</strong><br><span style="font-size:10px;opacity:0.85">'+classInfo+' \u00b7 '+(isCross?'all sections':e.type)+'</span></div></div>';
+      const wTimeLbl = e.time ? '<span style="font-size:10px;font-weight:600;margin-right:4px">'+e.time+'</span>' : '';
+      html+='<div class="wev-wrap"><div class="wev '+evChipClass(e)+'" onclick="showDetail('+e.id+',this)">'+wTimeLbl+'<strong>'+e.title+'</strong><br><span style="font-size:10px;opacity:0.85">'+classInfo+' \u00b7 '+(isCross?'all sections':e.type)+'</span></div></div>';
     });
     html+='</div></div>';
   }
@@ -1137,7 +1151,9 @@ function openEditModal(id) {
 
   backdrop.innerHTML = '<div class="modal">'
     +'<h3>Edit event</h3>'
-    +'<label>Title</label><input type="text" id="ev-title-edit" value="'+ev.title.replace(/"/g,'&quot;')+'">'
+    +'<label>Title</label><input type=\"text\" id=\"ev-title-edit\" value=\"'+ev.title.replace(/\"/g,'&quot;')+'\">'  
+    +'<label style="margin-top:10px;display:block">Time <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span></label>'
+    +'<input type="time" id="ev-time-edit" value="'+(ev.time||'')+'" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border-mid);border-radius:var(--border-radius-md);background:var(--bg-primary);color:var(--text-primary);outline:none;font-family:var(--font);margin-bottom:2px">'
     +'<label style="margin-top:10px;display:block">Date</label>'
     + (isRange
         ? '<div style="font-size:12px;color:var(--text-secondary);background:var(--bg-secondary);border-radius:6px;padding:7px 10px;margin-bottom:10px">&#9432; Range event ('+ev.rangeStart+' → '+ev.rangeEnd+'). Only this day&#39;s title and classes can be edited.</div><input type="date" id="ev-date-edit" value="'+ev.date+'" disabled style="opacity:0.6;width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border-mid);border-radius:var(--border-radius-md);font-family:var(--font)">'
@@ -1168,12 +1184,13 @@ function openEditModal(id) {
     const title  = document.getElementById('ev-title-edit').value.trim();
     const date   = document.getElementById('ev-date-edit').value;
     const type   = document.getElementById('ev-type-edit').value;
+    const evTimeEdit = document.getElementById('ev-time-edit')?.value||'';
     const classes = getSelectedClassesEdit();
     if (!title) { alert('Please enter a title.'); return; }
     if (type!=='cross'&&type!=='salida'&&type!=='feriado'&&type!=='sports'&&classes.length===0) {
       alert('Please select at least one class.'); return;
     }
-    const updated = { ...ev, title, date, type, classes };
+    const updated = { ...ev, title, date, type, classes, time:evTimeEdit };
     backdrop.remove();
     setSyncStatus('loading','Saving changes...');
     if (SCRIPT_URL==='PASTE_YOUR_WEB_APP_URL_HERE') {
@@ -1240,6 +1257,8 @@ function openModal() {
     +'</div>'
     +'<div id="range-preview" style="font-size:11px;color:var(--text-tertiary);margin-top:6px;min-height:16px"></div>'
     +'</div>'
+    +'<label>Time <span style="font-weight:400;color:var(--text-tertiary)">(optional)</span></label>'
+    +'<input type="time" id="ev-time" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border-mid);border-radius:var(--border-radius-md);background:var(--bg-primary);color:var(--text-primary);outline:none;font-family:var(--font);margin-bottom:2px">'
     +'<label>Type</label>'
     +'<select id="ev-type" onchange="onTypeChange()">'
     +'<option value="activity">Activity</option>'
@@ -1304,7 +1323,8 @@ function openModal() {
     if(dateMode==='single'){
       const date=document.getElementById('ev-date').value;
       if(!date){ alert('Please select a date.'); return; }
-      newEvents=[{id:nextId++,date,title,classes,type,groupId:null,rangeStart:null,rangeEnd:null,rangePosition:null}];
+      const evTime=document.getElementById('ev-time').value||'';
+      newEvents=[{id:nextId++,date,title,classes,type,time:evTime,groupId:null,rangeStart:null,rangeEnd:null,rangePosition:null}];
     } else {
       const dateStart=document.getElementById('ev-date-start').value;
       const dateEnd=document.getElementById('ev-date-end').value;
@@ -1316,7 +1336,8 @@ function openModal() {
       let idx=0;
       while(d<=end){
         const pos=idx===0?'start':(idx===total-1?'end':'mid');
-        newEvents.push({id:nextId++,date:fmt(d),title,classes,type,groupId,rangeStart:dateStart,rangeEnd:dateEnd,rangePosition:pos});
+        const rTime=document.getElementById('ev-time').value||'';
+        newEvents.push({id:nextId++,date:fmt(d),title,classes,type,time:rTime,groupId,rangeStart:dateStart,rangeEnd:dateEnd,rangePosition:pos});
         d.setDate(d.getDate()+1); idx++;
       }
     }
@@ -1340,19 +1361,16 @@ document.getElementById('open-add').onclick = openModal;
 
 /* ── Export / Import ─────────────────────────────────────────── */
 function normaliseEvent(raw) {
-  // Ensure date is a plain YYYY-MM-DD string — never pass through a Date object
   const safeDate = d => {
     if (!d) return '';
-    if (typeof d === 'string') {
-      // Strip any time component that could cause UTC shift
-      return d.slice(0,10);
-    }
+    if (typeof d === 'string') return d.slice(0,10);
     if (d instanceof Date) return fmt(d);
     return String(d).slice(0,10);
   };
   return {
     id:            typeof raw.id==='number'?raw.id:0,
     date:          safeDate(raw.date),
+    time:          raw.time||'',
     title:         raw.title||'Untitled',
     type:          raw.type||'activity',
     classes:       Array.isArray(raw.classes)?raw.classes:(raw.grade?[raw.grade]:[]),
