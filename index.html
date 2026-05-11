@@ -550,11 +550,7 @@ function doLogin() {
       else { loginError('Incorrect password. Please try again.'); }
     })
     .catch(() => {
-      // Fallback to local auth if server unreachable
-      const stored = getLocalPasswords();
-      if (loginTab==='viewer' && pw===stored.viewer) { startSession('viewer', pw); }
-      else if (loginTab==='editor' && pw===stored.editor) { startSession('editor', pw); }
-      else { loginError('Could not reach server. Check your connection.'); }
+      loginError('Could not reach server. Check your internet connection and try again.');
     });
 }
 
