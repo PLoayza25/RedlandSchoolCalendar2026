@@ -536,7 +536,7 @@ function doLogin() {
   document.getElementById('pw-input').disabled = true;
   document.querySelector('.login-btn').textContent = 'Checking...';
 
-  if (SCRIPT_URL === 'PASTE_YOUR_WEB_APP_URL_HERE') {
+  if (SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbxEpuuVCjBqbbED7PIsCFKv5DJqxEDNS_ElG5QQi88pEfJ4w-Zucl3U1pcN1U0VkVUN5A/exec') {
     // Offline / demo mode — use localStorage passwords
     const stored = getLocalPasswords();
     if (loginTab==='viewer' && pw===stored.viewer) { startSession('viewer', pw); }
@@ -617,7 +617,7 @@ function savePasswords() {
   const fv = nv || cur.viewer;
   const fe = ne || cur.editor;
   if (fv === fe) { showToast('Passwords must be different.'); return; }
-  if (SCRIPT_URL !== 'PASTE_YOUR_WEB_APP_URL_HERE') {
+  if (SCRIPT_URL !== 'https://script.google.com/macros/s/AKfycbxEpuuVCjBqbbED7PIsCFKv5DJqxEDNS_ElG5QQi88pEfJ4w-Zucl3U1pcN1U0VkVUN5A/exec') {
     apiCall({ action:'updatePasswords', token:sessionToken, viewer:nv||null, editor:ne||null })
       .then(d => {
         if (d.ok) { saveLocalPasswords(fv, fe); toggleSettings(); showToast('Passwords updated.'); }
@@ -726,7 +726,7 @@ let activeType = new Set(['activity','test','salida','cross','feriado','sports']
 
 function loadEvents() {
   setSyncStatus('loading', 'Loading events...');
-  if (SCRIPT_URL === 'PASTE_YOUR_WEB_APP_URL_HERE') {
+  if (SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbxEpuuVCjBqbbED7PIsCFKv5DJqxEDNS_ElG5QQi88pEfJ4w-Zucl3U1pcN1U0VkVUN5A/exec') {
     setSyncStatus('err', 'Not connected — running in local demo mode');
     render(); return;
   }
@@ -953,7 +953,7 @@ function confirmDelete(id) {
   document.getElementById('cd').onclick = ()=>{
     backdrop.remove();
     setSyncStatus('loading','Deleting...');
-    if (SCRIPT_URL==='PASTE_YOUR_WEB_APP_URL_HERE') { deleteEventLocal(id); showToast('Deleted.'); setSyncStatus('ok','Local mode'); return; }
+    if (SCRIPT_URL==='https://script.google.com/macros/s/AKfycbxEpuuVCjBqbbED7PIsCFKv5DJqxEDNS_ElG5QQi88pEfJ4w-Zucl3U1pcN1U0VkVUN5A/exec') { deleteEventLocal(id); showToast('Deleted.'); setSyncStatus('ok','Local mode'); return; }
     apiCall({action:'deleteEvent', id:id})
       .then(d=>{ if(d.ok){ deleteEventLocal(id); showToast('Event deleted.'); setSyncStatus('ok','Synced'); } else showToast('Error: '+d.error); })
       .catch(()=>showToast('Connection error — event not deleted.'));
@@ -976,14 +976,14 @@ function showDeleteRangeModal(id, groupId, title, rangeStart, rangeEnd) {
   document.getElementById('dr-cancel').onclick = ()=>backdrop.remove();
   document.getElementById('dr-one').onclick = ()=>{
     backdrop.remove();
-    if (SCRIPT_URL==='PASTE_YOUR_WEB_APP_URL_HERE') { deleteEventLocal(id); showToast('This day removed.'); return; }
+    if (SCRIPT_URL==='https://script.google.com/macros/s/AKfycbxEpuuVCjBqbbED7PIsCFKv5DJqxEDNS_ElG5QQi88pEfJ4w-Zucl3U1pcN1U0VkVUN5A/exec') { deleteEventLocal(id); showToast('This day removed.'); return; }
     apiCall({action:'deleteEvent',id:id})
       .then(d=>{ if(d.ok){ deleteEventLocal(id); showToast('This day removed.'); setSyncStatus('ok','Synced'); } else showToast('Error: '+d.error); });
   };
   document.getElementById('dr-all').onclick = ()=>{
     backdrop.remove();
     setSyncStatus('loading','Deleting range...');
-    if (SCRIPT_URL==='PASTE_YOUR_WEB_APP_URL_HERE') { events=events.filter(e=>e.groupId!==groupId); render(); showToast('Range deleted.'); setSyncStatus('ok','Local mode'); return; }
+    if (SCRIPT_URL==='https://script.google.com/macros/s/AKfycbxEpuuVCjBqbbED7PIsCFKv5DJqxEDNS_ElG5QQi88pEfJ4w-Zucl3U1pcN1U0VkVUN5A/exec') { events=events.filter(e=>e.groupId!==groupId); render(); showToast('Range deleted.'); setSyncStatus('ok','Local mode'); return; }
     apiCall({action:'deleteGroup',groupId:groupId})
       .then(d=>{ if(d.ok){ events=events.filter(e=>e.groupId!==groupId); render(); showToast('Entire range deleted.'); setSyncStatus('ok','Synced'); } else showToast('Error: '+d.error); });
   };
@@ -1196,7 +1196,7 @@ function openEditModal(id) {
     const updated = { ...ev, title, date, type, classes, time:evTimeEdit };
     backdrop.remove();
     setSyncStatus('loading','Saving changes...');
-    if (SCRIPT_URL==='PASTE_YOUR_WEB_APP_URL_HERE') {
+    if (SCRIPT_URL==='https://script.google.com/macros/s/AKfycbxEpuuVCjBqbbED7PIsCFKv5DJqxEDNS_ElG5QQi88pEfJ4w-Zucl3U1pcN1U0VkVUN5A/exec') {
       events = events.map(e=>e.id===id?updated:e);
       render(); showToast('Event updated.'); setSyncStatus('ok','Local mode'); return;
     }
@@ -1347,7 +1347,7 @@ function openModal() {
 
     backdrop.remove();
     setSyncStatus('loading','Saving...');
-    if(SCRIPT_URL==='PASTE_YOUR_WEB_APP_URL_HERE'){
+    if(SCRIPT_URL==='https://script.google.com/macros/s/AKfycbxEpuuVCjBqbbED7PIsCFKv5DJqxEDNS_ElG5QQi88pEfJ4w-Zucl3U1pcN1U0VkVUN5A/exec'){
       events=[...events,...newEvents]; render(); showToast('Event added (local).'); setSyncStatus('ok','Local mode'); return;
     }
     apiCall({action:'addEvents',events:newEvents})
@@ -1422,7 +1422,7 @@ function doImport(mode, incoming, newOnly, dupCount) {
   if(toAdd.length===0){ showToast('Nothing new to import.'); return; }
 
   // Offline / demo mode
-  if(SCRIPT_URL==='PASTE_YOUR_WEB_APP_URL_HERE'){
+  if(SCRIPT_URL==='https://script.google.com/macros/s/AKfycbxEpuuVCjBqbbED7PIsCFKv5DJqxEDNS_ElG5QQi88pEfJ4w-Zucl3U1pcN1U0VkVUN5A/exec'){
     if(mode==='replace'){ events=incoming.map((e,i)=>({...e,id:i+1})); nextId=events.length+1; }
     else { let maxId=events.length?Math.max(...events.map(e=>e.id)):0; const added=newOnly.map(e=>({...e,id:++maxId})); events=[...events,...added]; nextId=maxId+1; }
     render(); showToast(toAdd.length+' event(s) '+(mode==='replace'?'loaded':'merged')+(dupCount?', '+dupCount+' duplicate(s) skipped.':'.')); return;
