@@ -333,7 +333,7 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 
 <script>
 // ── CONFIGURATION — paste your Web App URL here ──────────────
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxEpuuVCjBqbbED7PIsCFKv5DJqxEDNS_ElG5QQi88pEfJ4w-Zucl3U1pcN1U0VkVUN5A/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwzqicf3bC8fmLxL1ttLCso2qPqqkToc8dIR9W7mlBK95TETMLLGQWN3zMOGaRmtNcc3w/exec';
 // ─────────────────────────────────────────────────────────────
 
 const TODAY  = new Date();
@@ -732,28 +732,40 @@ function loadEvents() {
     setSyncStatus('err', 'Not connected — running in local demo mode');
     render(); return;
   }
-  // Fetch all events page by page (50 per page) to keep each JSONP response small
-  function fetchPage(page, accumulated) {
-    setSyncStatus('loading', page > 0 ? 'Loading events... (' + accumulated.length + ' so far)' : 'Loading events...');
+
+  function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function fetchPage(page, accumulated, attempt) {
+    attempt = attempt || 1;
+    setSyncStatus('loading', accumulated.length > 0
+      ? 'Loading events... (' + accumulated.length + ' loaded)'
+      : 'Loading events...');
     return apiCall({ action:'getEvents', page: page })
       .then(data => {
         if (!data.ok) throw new Error(data.error);
         const all = accumulated.concat(data.events || []);
         if (data.hasMore) {
-          return fetchPage(page + 1, all);
+          return wait(300).then(() => fetchPage(page + 1, all, 1));
         }
         return all;
+      })
+      .catch(err => {
+        if (attempt < 3) {
+          return wait(1500 * attempt).then(() => fetchPage(page, accumulated, attempt + 1));
+        }
+        throw err;
       });
   }
-  fetchPage(0, [])
+
+  fetchPage(0, [], 1)
     .then(allEvents => {
       events = allEvents;
       nextId = events.length ? Math.max(...events.map(e=>e.id)) + 1 : 1;
-      setSyncStatus('ok', 'Synced ' + new Date().toLocaleTimeString());
+      setSyncStatus('ok', 'Synced ' + new Date().toLocaleTimeString() + ' (' + events.length + ' events)');
       render();
     })
     .catch(err => {
-      setSyncStatus('err', 'Could not connect — click ↻ Refresh to try again');
+      setSyncStatus('err', 'Could not load all events — click ↻ Refresh to try again');
     });
 }
 
