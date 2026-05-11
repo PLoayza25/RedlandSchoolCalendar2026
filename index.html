@@ -745,7 +745,7 @@ function loadEvents() {
         if (!data.ok) throw new Error(data.error);
         const all = accumulated.concat(data.events || []);
         if (data.hasMore) {
-          return wait(300).then(() => fetchPage(page + 1, all, 1));
+          return wait(1500).then(() => fetchPage(page + 1, all, 1));
         }
         return all;
       })
