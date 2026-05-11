@@ -644,68 +644,39 @@ function setSyncStatus(state, msg) {
   lbl.textContent = msg;
 }
 
-/* ── API layer — uses JSONP to bypass CORS on any host ───────── */
-let _jsonpCounter = 0;
-
+/* ── API layer — JSONP to bypass CORS ───────────────────────── */
+let _cbN = 0;
 function apiCall(payload, useToken) {
   if (useToken !== false) payload.token = sessionToken;
   return new Promise((resolve, reject) => {
-    const cbName = '_cb' + (++_jsonpCounter);
+    const cb = '_cb' + (++_cbN);
     const timer = setTimeout(() => {
-      delete window[cbName];
-      const s = document.getElementById('jsonp_'+cbName);
+      delete window[cb];
+      const s = document.getElementById('jscb_'+cb);
       if (s) s.remove();
-      // On timeout, try fetching via a simple GET to see what's happening
-      reject(new Error('Request timed out'));
-    }, 45000);
-
-    window[cbName] = function(data) {
+      reject(new Error('Timeout'));
+    }, 30000);
+    window[cb] = function(data) {
       clearTimeout(timer);
-      delete window[cbName];
-      const s = document.getElementById('jsonp_'+cbName);
+      delete window[cb];
+      const s = document.getElementById('jscb_'+cb);
       if (s) s.remove();
       resolve(data);
     };
-
-    // Also register without underscore prefix in case Google strips it
-    const cbNameAlt = cbName.slice(1); // remove leading _
-    window[cbNameAlt] = window[cbName];
-
     const encoded = encodeURIComponent(JSON.stringify(payload));
-    const url = SCRIPT_URL + '?callback=' + cbName + '&payload=' + encoded;
-    const script = document.createElement('script');
-    script.id = 'jsonp_' + cbName;
-    script.src = url;
-    script.onload = () => {
-      // Script loaded — if callback hasn't fired after 2s, try direct fetch
-      setTimeout(() => {
-        if (window[cbName]) {
-          // Callback still registered = it didn't fire
-          // Try fetching the URL directly to parse the response
-          fetch(url)
-            .then(r => r.text())
-            .then(text => {
-              const match = text.match(/\{[\s\S]*\}/);
-              if (match) {
-                try {
-                  clearTimeout(timer);
-                  delete window[cbName];
-                  delete window[cbNameAlt];
-                  resolve(JSON.parse(match[0]));
-                } catch(e) {}
-              }
-            }).catch(() => {});
-        }
-      }, 2000);
-    };
-    script.onerror = () => {
+    const url = SCRIPT_URL + '?callback=' + cb + '&payload=' + encoded;
+    console.log('apiCall:', payload.action, 'cb:', cb, 'token:', payload.token ? payload.token.length : 0);
+    const s = document.createElement('script');
+    s.id = 'jscb_' + cb;
+    s.src = url;
+    s.onload = () => console.log('script loaded for', cb, '- window[cb] exists:', !!window[cb]);
+    s.onerror = () => {
       clearTimeout(timer);
-      delete window[cbName];
-      delete window[cbNameAlt];
-      script.remove();
+      delete window[cb];
+      s.remove();
       reject(new Error('Network error'));
     };
-    document.head.appendChild(script);
+    document.head.appendChild(s);
   });
 }
 
@@ -761,6 +732,7 @@ function loadEvents(attempt) {
     setSyncStatus('err', 'Not connected — running in local demo mode');
     render(); return;
   }
+  console.log('loadEvents: calling apiCall with token length', sessionToken ? sessionToken.length : 0);
   apiCall({ action:'getEvents' })
     .then(data => {
       if (data.ok) {
