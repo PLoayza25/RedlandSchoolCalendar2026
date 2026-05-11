@@ -333,7 +333,7 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 
 <script>
 // ── CONFIGURATION — paste your Web App URL here ──────────────
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwzqicf3bC8fmLxL1ttLCso2qPqqkToc8dIR9W7mlBK95TETMLLGQWN3zMOGaRmtNcc3w/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXzXCj8ICERh9U15ZCtCbZjQs9zKAp1L88-ch3H_BiCwHDrQNyqwR10GJJU5h3nSKhNg/exec';
 // ─────────────────────────────────────────────────────────────
 
 const TODAY  = new Date();
@@ -726,46 +726,36 @@ let weekOff  = 0;
 let activeSec  = new Set(['Junior','Middle','Senior','Cross']);
 let activeType = new Set(['activity','test','salida','cross','feriado','sports']);
 
-function loadEvents() {
-  setSyncStatus('loading', 'Loading events...');
+function loadEvents(attempt) {
+  attempt = attempt || 1;
+  setSyncStatus('loading', attempt > 1 ? 'Retrying... (' + attempt + '/3)' : 'Loading events...');
   if (SCRIPT_URL === 'PASTE_YOUR_WEB_APP_URL_HERE') {
     setSyncStatus('err', 'Not connected — running in local demo mode');
     render(); return;
   }
-
-  function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-  function fetchPage(page, accumulated, attempt) {
-    attempt = attempt || 1;
-    setSyncStatus('loading', accumulated.length > 0
-      ? 'Loading events... (' + accumulated.length + ' loaded)'
-      : 'Loading events...');
-    return apiCall({ action:'getEvents', page: page })
-      .then(data => {
-        if (!data.ok) throw new Error(data.error);
-        const all = accumulated.concat(data.events || []);
-        if (data.hasMore) {
-          return wait(1500).then(() => fetchPage(page + 1, all, 1));
-        }
-        return all;
-      })
-      .catch(err => {
-        if (attempt < 3) {
-          return wait(1500 * attempt).then(() => fetchPage(page, accumulated, attempt + 1));
-        }
-        throw err;
-      });
-  }
-
-  fetchPage(0, [], 1)
-    .then(allEvents => {
-      events = allEvents;
-      nextId = events.length ? Math.max(...events.map(e=>e.id)) + 1 : 1;
-      setSyncStatus('ok', 'Synced ' + new Date().toLocaleTimeString() + ' (' + events.length + ' events)');
-      render();
+  apiCall({ action:'getEvents' })
+    .then(data => {
+      if (data.ok) {
+        events = (data.events || []).map(e => ({
+          id: e.id, date: e.date||'', title: e.title||'',
+          type: e.type||'activity', classes: e.classes||[],
+          groupId: e.groupId||null, rangeStart: e.rangeStart||null,
+          rangeEnd: e.rangeEnd||null, rangePosition: e.rangePosition||null,
+          time: e.time||''
+        }));
+        nextId = events.length ? Math.max(...events.map(e=>e.id)) + 1 : 1;
+        setSyncStatus('ok', 'Synced ' + new Date().toLocaleTimeString() + ' (' + events.length + ' events)');
+        render();
+      } else {
+        setSyncStatus('err', 'Error: ' + data.error);
+      }
     })
     .catch(err => {
-      setSyncStatus('err', 'Could not load all events — click ↻ Refresh to try again');
+      if (attempt < 4) {
+        setTimeout(() => loadEvents(attempt + 1), 2000 * attempt);
+      } else {
+        setSyncStatus('err', 'Could not connect — click ↻ Refresh to try again');
+      }
     });
 }
 
