@@ -295,6 +295,7 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
     <span class="sync-dot" id="sync-dot"></span>
     <span id="sync-msg">Connecting...</span>
     <button class="icon-btn" id="refresh-btn" onclick="loadEvents()" style="padding:2px 8px;font-size:10px;margin-left:auto">&#8635; Refresh</button>
+    <button class="icon-btn" id="publish-btn" onclick="publishToGitHub()" style="display:none;padding:2px 8px;font-size:10px;background:#1A6B35;color:#fff;border-color:#1A6B35">&#128278; Publish</button>
   </div>
   <div class="top-bar">
     <button class="nav-btn" id="prev">&#8592;</button>
@@ -333,7 +334,9 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 
 <script>
 // ── CONFIGURATION — paste your Web App URL here ──────────────
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXzXCj8ICERh9U15ZCtCbZjQs9zKAp1L88-ch3H_BiCwHDrQNyqwR10GJJU5h3nSKhNg/exec';
+const SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbxXzXCj8ICERh9U15ZCtCbZjQs9zKAp1L88-ch3H_BiCwHDrQNyqwR10GJJU5h3nSKhNg/exec';
+const GH_REPO      = 'PLoayza25/RedlandSchoolCalendar2026';
+const GH_FILE      = 'events.json';
 // ─────────────────────────────────────────────────────────────
 
 const TODAY  = new Date();
@@ -580,6 +583,8 @@ function startSession(role, token) {
   document.getElementById('settings-btn').style.display = ed ? 'inline-block' : 'none';
   document.getElementById('export-btn').style.display = ed ? 'inline-block' : 'none';
   document.getElementById('import-btn').style.display = ed ? 'inline-block' : 'none';
+  const pb = document.getElementById('publish-btn');
+  if (pb) pb.style.display = ed ? 'inline-block' : 'none';
   loadEvents();
 }
 
@@ -726,37 +731,67 @@ let weekOff  = 0;
 let activeSec  = new Set(['Junior','Middle','Senior','Cross']);
 let activeType = new Set(['activity','test','salida','cross','feriado','sports']);
 
-function loadEvents(attempt) {
-  attempt = attempt || 1;
-  setSyncStatus('loading', attempt > 1 ? 'Retrying... (' + attempt + '/3)' : 'Loading events...');
-  if (SCRIPT_URL === 'PASTE_YOUR_WEB_APP_URL_HERE') {
-    setSyncStatus('err', 'Not connected — running in local demo mode');
-    render(); return;
-  }
-  apiCall({ action:'getEvents' })
-    .then(data => {
-      if (data.ok) {
-        events = (data.events || []).map(e => ({
-          id: e.id, date: e.date||'', title: e.title||'',
-          type: e.type||'activity', classes: e.classes||[],
-          groupId: e.groupId||null, rangeStart: e.rangeStart||null,
-          rangeEnd: e.rangeEnd||null, rangePosition: e.rangePosition||null,
-          time: e.time||''
-        }));
-        nextId = events.length ? Math.max(...events.map(e=>e.id)) + 1 : 1;
-        setSyncStatus('ok', 'Synced ' + new Date().toLocaleTimeString() + ' (' + events.length + ' events)');
-        render();
-      } else {
-        setSyncStatus('err', 'Error: ' + data.error);
-      }
+function loadEvents() {
+  setSyncStatus('loading', 'Loading events...');
+  // Load from GitHub JSON file — fast, no CORS issues
+  const url = 'https://raw.githubusercontent.com/' + GH_REPO + '/main/' + GH_FILE + '?t=' + Date.now();
+  fetch(url)
+    .then(r => {
+      if (!r.ok) throw new Error('File not found');
+      return r.json();
     })
-    .catch(err => {
-      if (attempt < 4) {
-        setTimeout(() => loadEvents(attempt + 1), 2000 * attempt);
-      } else {
-        setSyncStatus('err', 'Could not connect — click ↻ Refresh to try again');
-      }
+    .then(data => {
+      events = (data.events || []).map(normaliseEvent);
+      nextId = events.length ? Math.max(...events.map(e=>e.id)) + 1 : 1;
+      setSyncStatus('ok', 'Synced ' + new Date().toLocaleTimeString() + ' (' + events.length + ' events)');
+      render();
+    })
+    .catch(() => {
+      // Fall back to Google Sheets if JSON file doesn't exist yet
+      setSyncStatus('loading', 'Loading from server...');
+      apiCall({ action:'getEvents' })
+        .then(data => {
+          if (data.ok) {
+            events = (data.events || []).map(normaliseEvent);
+            nextId = events.length ? Math.max(...events.map(e=>e.id)) + 1 : 1;
+            setSyncStatus('ok', 'Synced ' + new Date().toLocaleTimeString() + ' (' + events.length + ' events)');
+            render();
+          } else {
+            setSyncStatus('err', 'Error: ' + data.error);
+          }
+        })
+        .catch(() => setSyncStatus('err', 'Could not connect — click ↻ Refresh to try again'));
     });
+}
+
+function publishToGitHub() {
+  if (!isEditor()) return;
+  // Download events.json then show instructions to upload to GitHub
+  const payload = JSON.stringify({ version:2, exportedAt: new Date().toISOString(), events, nextId }, null, 2);
+  const blob = new Blob([payload], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'events.json'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('events.json downloaded — upload it to GitHub to publish.');
+  // Show instructions modal
+  const b = document.createElement('div');
+  b.className = 'modal-backdrop';
+    const div = document.createElement('div');
+  div.className = 'modal';
+  div.style.width = '480px';
+  div.innerHTML = '<h3>&#128278; Publish events</h3>'
+    + '<p style="font-size:13px;margin-bottom:1rem">events.json downloaded. Now upload to GitHub:</p>'
+    + '<ol style="font-size:13px;line-height:2;padding-left:1.2rem">'
+    + '<li>Go to github.com/PLoayza25/RedlandSchoolCalendar2026</li>'
+    + '<li>Click <b>Add file → Upload files</b></li>'
+    + '<li>Drag and drop <b>events.json</b></li>'
+    + '<li>Click <b>Commit changes</b></li>'
+    + '<li>Wait 1 min — viewers see the update</li>'
+    + '</ol>'
+    + '<div class="modal-actions"><button class="btn-save" data-closepub="1">Got it</button></div>';
+  b.appendChild(div);
+  document.body.appendChild(b);
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */
@@ -1233,6 +1268,7 @@ function buildClassSelectorEdit(selectedClasses) {
   return parts.join('');
 }
 document.addEventListener('click', function(ev) {
+  if (ev.target.dataset.closepub) { ev.target.closest('.modal-backdrop').remove(); return; }
   const btn = ev.target.closest('[data-esec]');
   if (!btn) return;
   const sec = btn.dataset.esec;
