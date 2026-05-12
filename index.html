@@ -295,7 +295,6 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
     <span class="sync-dot" id="sync-dot"></span>
     <span id="sync-msg">Connecting...</span>
     <button class="icon-btn" id="refresh-btn" onclick="loadEvents()" style="padding:2px 8px;font-size:10px;margin-left:auto">&#8635; Refresh</button>
-    <button class="icon-btn" id="publish-btn" onclick="publishToGitHub()" style="display:none;padding:2px 8px;font-size:10px;background:#1A6B35;color:#fff;border-color:#1A6B35">&#128278; Publish</button>
   </div>
   <div class="top-bar">
     <button class="nav-btn" id="prev">&#8592;</button>
@@ -335,8 +334,6 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 <script>
 // ── CONFIGURATION — paste your Web App URL here ──────────────
 const SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbxXzXCj8ICERh9U15ZCtCbZjQs9zKAp1L88-ch3H_BiCwHDrQNyqwR10GJJU5h3nSKhNg/exec';
-const GH_REPO      = 'PLoayza25/RedlandSchoolCalendar2026';
-const GH_FILE      = 'events.json';
 // ─────────────────────────────────────────────────────────────
 
 const TODAY  = new Date();
@@ -373,16 +370,14 @@ let currentRole = null;
 let sessionToken = null;
 let loginTab = 'viewer';
 
-function setLoginTab(t) 
+function setLoginTab(t) {
   loginTab = t;
   document.getElementById('tab-viewer').classList.toggle('active', t==='viewer');
   document.getElementById('tab-editor').classList.toggle('active', t==='editor');
   document.getElementById('pw-label').textContent = t==='viewer' ? 'Viewer password' : 'Editor password';
   document.getElementById('login-error').textContent = '';
   document.getElementById('pw-input').value = '';
-  // Clear any stale cached passwords from localStorage
-try { localStorage.removeItem('scal_pw2'); } catch(e) {}
-document.getElementById('pw-input').focus();
+  document.getElementById('pw-input').focus();
 }
 
 /* ── Print / PDF ─────────────────────────────────────────────── */
@@ -733,18 +728,16 @@ let activeType = new Set(['activity','test','salida','cross','feriado','sports']
 
 function loadEvents() {
   setSyncStatus('loading', 'Loading events...');
-  const url = 'https://raw.githubusercontent.com/' + GH_REPO + '/main/' + GH_FILE + '?t=' + Date.now();
+  const url = 'https://raw.githubusercontent.com/PLoayza25/RedlandSchoolCalendar2026/main/events.json?t=' + Date.now();
   fetch(url)
     .then(r => { if (!r.ok) throw new Error('not found'); return r.json(); })
     .then(data => {
       events = (data.events || []).map(normaliseEvent);
       nextId = data.nextId || (events.length ? Math.max(...events.map(e=>e.id)) + 1 : 1);
-      setSyncStatus('ok', 'Loaded ' + events.length + ' events');
+      setSyncStatus('ok', 'Loaded ' + events.length + ' events — ' + new Date().toLocaleTimeString());
       render();
     })
-    .catch(() => {
-      setSyncStatus('err', 'Could not load events — click ↻ Refresh to try again');
-    });
+    .catch(() => setSyncStatus('err', 'Could not load events — click ↻ Refresh to try again'));
 }
 
 function publishToGitHub() {
@@ -1053,9 +1046,7 @@ function renderMonth() {
       testEvs.slice(0,2).forEach(e=>{
         const lbl=classesLabel(e)?classesLabel(e)+': '+e.title:e.title;
         const rangeClass=e.rangePosition?' ev-range-'+e.rangePosition:'';
-const tpfx=e.time?e.time+' ':'';
-html+='<div class="ev-wrap">
-        ><span class="ev '+evChipClass(e)+rangeClass+'" onclick="showDetail('+e.id+',this)" title="'+e.title+'">'+tpfx+lbl+'</span></div>';
+        html+='<div class="ev-wrap"><span class="ev '+evChipClass(e)+rangeClass+'" onclick="showDetail('+e.id+',this)" title="'+e.title+'">'+tpfx+lbl+'</span></div>';
       });
       if(testEvs.length>2) html+='<div class="more">+'+(testEvs.length-2)+' more</div>';
     }
