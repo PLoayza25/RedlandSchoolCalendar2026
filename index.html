@@ -1046,6 +1046,7 @@ function renderMonth() {
       testEvs.slice(0,2).forEach(e=>{
         const lbl=classesLabel(e)?classesLabel(e)+': '+e.title:e.title;
         const rangeClass=e.rangePosition?' ev-range-'+e.rangePosition:'';
+        const tpfx=e.time?e.time+' ':'';
         html+='<div class="ev-wrap"><span class="ev '+evChipClass(e)+rangeClass+'" onclick="showDetail('+e.id+',this)" title="'+e.title+'">'+tpfx+lbl+'</span></div>';
       });
       if(testEvs.length>2) html+='<div class="more">+'+(testEvs.length-2)+' more</div>';
