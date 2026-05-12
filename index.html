@@ -1042,7 +1042,8 @@ function renderMonth() {
       const sk=evSectionKey(e);
       const lbl=sk==='Cross'?'All sections: '+e.title:(classesLabel(e)?classesLabel(e)+': '+e.title:e.title);
       const rangeClass=e.rangePosition?' ev-range-'+e.rangePosition:'';
-      html+='<div class="ev-wrap"><span class="ev '+evChipClass(e)+rangeClass+'" onclick="showDetail('+e.id+',this)" title="'+e.title+'">'+lblWithTime+'</span></div>';
+      const tpfx=e.time?e.time+' ':'';
+      html+='<div class="ev-wrap"><span class="ev '+evChipClass(e)+rangeClass+'" onclick="showDetail('+e.id+',this)" title="'+e.title+'">'+tpfx+lbl+'</span></div>';
     });
     if(topEvs.length>3) html+='<div class="more">+'+(topEvs.length-3)+' more</div>';
     html+='</div>';
