@@ -1087,17 +1087,18 @@ function renderMonth() {
 
 /* ── Render week ─────────────────────────────────────────────── */
 function weekStart() {
-  const d=new Date(TODAY); d.setDate(d.getDate()-d.getDay()+weekOff*7); return d;
+  const d=new Date(TODAY); const day=d.getDay()||7; d.setDate(d.getDate()-day+1+weekOff*7); return d;
 }
 function renderWeek() {
-  const ws=weekStart(), we=new Date(ws); we.setDate(ws.getDate()+6);
+  const ws=weekStart(), we=new Date(ws); we.setDate(ws.getDate()+5);
   document.getElementById('mlabel').textContent=ws.toLocaleDateString('es',{month:'short',day:'numeric'})+' \u2013 '+we.toLocaleDateString('es',{month:'short',day:'numeric',year:'numeric'});
   let html='<div class="week-view">';
-  for(let i=0;i<7;i++){
+  for(let i=0;i<6;i++){
     const d=new Date(ws); d.setDate(ws.getDate()+i);
     const dt=fmt(d), isT=dt===fmt(TODAY), evs=byDate(dt);
     const hasFeriadoW=events.some(e=>e.type==='feriado'&&e.date===dt);
-    html+='<div class="week-row'+(hasFeriadoW?' feriado-row':'')+'"><div class="wlabel"><div class="wday-name">'+DAYS[d.getDay()]+'</div><div class="wday-num'+(isT?' today':hasFeriadoW?' feriado':'')+'">'+d.getDate()+'</div></div>';
+    const dayName=DAYS[(d.getDay()+6)%7]; // Mon=0...Sat=5
+    html+='<div class="week-row'+(hasFeriadoW?' feriado-row':'')+'"><div class="wlabel"><div class="wday-name">'+dayName+'</div><div class="wday-num'+(isT?' today':hasFeriadoW?' feriado':'')+'">'+d.getDate()+'</div></div>';
     html+='<div class="wevents">';
     if(!evs.length) html+='<span style="font-size:11px;color:var(--text-tertiary)">No events</span>';
     evs.forEach(e=>{
