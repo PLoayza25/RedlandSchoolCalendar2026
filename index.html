@@ -333,7 +333,7 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 
 <script>
 // ── CONFIGURATION — paste your Web App URL here ──────────────
-const SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbxXzXCj8ICERh9U15ZCtCbZjQs9zKAp1L88-ch3H_BiCwHDrQNyqwR10GJJU5h3nSKhNg/exec';
+const SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbydfWSut_2UjEh2-AJ6DMry3oNJgR7d7ET0AmCDBkGkuk4YgePGBwJrBB1N1alJAPoy0w/exec';
 // ─────────────────────────────────────────────────────────────
 
 const TODAY  = new Date();
@@ -1027,12 +1027,25 @@ function renderMonth() {
   let html = '<div class="cal-grid">';
   DAYS.forEach(d=>html+='<div class="day-header">'+d+'</div>');
   let cells=[];
-  for(let i=firstDay-1;i>=0;i--) cells.push({d:prevDim-i,mo:m-1,other:true});
-  for(let i=1;i<=dim;i++) cells.push({d:i,mo:m,other:false});
-  while(cells.length%6!==0) cells.push({d:cells.length-dim-firstDay+1,mo:m+1,other:true});
-  // Remove any cells that fall on Sunday (getDay()===0)
-  cells = cells.filter(c=>new Date(y,c.mo,c.d).getDay()!==0);
-  while(cells.length%6!==0) cells.push({d:cells[cells.length-1].d+1,mo:m+1,other:true});
+  // Add current month days, skipping Sundays
+  for(let i=1;i<=dim;i++){
+    if(new Date(y,m,i).getDay()!==0) cells.push({d:i,mo:m,other:false});
+  }
+  // Prepend leading days from prev month (Mon-Sat only) to fill first row
+  const firstMon = new Date(y,m,1).getDay(); // 0=Sun,1=Mon...6=Sat
+  const leadCount = firstMon===0 ? 0 : firstMon-1; // Mon=0 leads, Tue=1 lead, etc
+  let leading=[];
+  for(let i=leadCount;i>=1;i--){
+    const d=prevDim-i+1;
+    if(new Date(y,m-1,d).getDay()!==0) leading.push({d:d,mo:m-1,other:true});
+  }
+  cells = leading.concat(cells);
+  // Pad end with next month days (Mon-Sat only)
+  let nextDay=1;
+  while(cells.length%6!==0){
+    if(new Date(y,m+1,nextDay).getDay()!==0) cells.push({d:nextDay,mo:m+1,other:true});
+    nextDay++;
+  }
   cells.forEach(c=>{
     const dt=fmt(new Date(y,c.mo,c.d));
     const isT=dt===fmt(TODAY);
@@ -1232,8 +1245,10 @@ function openEditModal(id) {
     apiCall({action:'deleteEvent',id:id})
       .then(()=>apiCall({action:'addEvents',events:[updated]}))
       .then(d=>{
-        if(d.ok){ events=events.map(e=>e.id===id?updated:e); render(); showToast('Event updated.'); setSyncStatus('ok','Synced '+new Date().toLocaleTimeString()); }
-        else showToast('Error saving: '+d.error);
+        if(d.ok){
+          events=events.map(e=>e.id===id?updated:e); render(); showToast('Event updated.'); setSyncStatus('ok','Synced '+new Date().toLocaleTimeString());
+         
+        } else showToast('Error saving: '+d.error);
       }).catch(()=>showToast('Connection error — changes not saved.'));
   };
 }
