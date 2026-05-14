@@ -1040,11 +1040,15 @@ function renderMonth() {
     if(new Date(y,m-1,d).getDay()!==0) leading.push({d:d,mo:m-1,other:true});
   }
   cells = leading.concat(cells);
-  // Pad end with next month days (Mon-Sat only)
+  // Pad end with next month days (Mon-Sat only) — max 6 rows (36 cells)
   let nextDay=1;
   while(cells.length%6!==0){
     if(new Date(y,m+1,nextDay).getDay()!==0) cells.push({d:nextDay,mo:m+1,other:true});
     nextDay++;
+  }
+  // Remove last row if it contains only next-month days and last month day is already shown
+  while(cells.length>6 && cells.slice(-6).every(c=>c.other)){
+    cells = cells.slice(0,-6);
   }
   cells.forEach(c=>{
     const dt=fmt(new Date(y,c.mo,c.d));
