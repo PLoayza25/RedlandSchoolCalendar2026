@@ -25,7 +25,6 @@
 }
 body { font-family: var(--font); background: var(--bg-tertiary); color: var(--text-primary); min-height: 100vh; padding: 24px 16px; }
 
-/* Login */
 #login-screen { max-width: 380px; margin: 80px auto 0; background: var(--bg-primary); border-radius: var(--radius-lg); border: 0.5px solid var(--border-light); padding: 2rem; }
 #login-screen h1 { font-size: 17px; font-weight: 500; margin-bottom: 0.35rem; }
 #login-screen p { font-size: 13px; color: var(--text-secondary); margin-bottom: 1.5rem; }
@@ -40,7 +39,6 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 .login-btn:hover { opacity: 0.85; }
 .login-error { font-size: 12px; color: #a32d2d; margin-top: 8px; min-height: 16px; }
 
-/* App */
 #app { max-width: 960px; margin: 0 auto; background: var(--bg-primary); border-radius: var(--radius-lg); border: 0.5px solid var(--border-light); padding: 1.5rem; display: none; }
 .app-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px; }
 .app-title-row { display: flex; align-items: center; gap: 8px; }
@@ -75,12 +73,10 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 .p-salida { background:#FBEAF0; color:#72243E; border-color:#ED93B1; }
 .p-sports { background:#1B4FD8; color:#ffffff; border-color:#1240B0; font-weight:500; }
 .ev-sports { background:#1B4FD8; color:#ffffff; border:0.5px solid #1240B0; font-weight:500; }
-/* Middle+Senior combined — teal-blue */
 .ev-ms { background:#0E7490; color:#ffffff; border:0.5px solid #0C5F73; font-weight:500; }
 .p-ms  { background:#0E7490; color:#ffffff; border-color:#0C5F73; font-weight:500; }
 .p-cross  { background:#D85A30; color:#ffffff; border-color:#993C1D; font-weight:500; }
 
-/* Event chips — section color, type indicated by shade */
 .ev-junior-act { background:#EEEDFE; color:#3C3489; border:0.5px solid #AFA9EC; }
 .ev-junior-test { background:#1a1a18; color:#ffffff; border:0.5px solid #000000; }
 .ev-middle-act { background:#E1F5EE; color:#085041; border:0.5px solid #5DCAA5; }
@@ -88,12 +84,10 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 .ev-senior-act { background:#FAEEDA; color:#633806; border:0.5px solid #EF9F27; }
 .ev-senior-test { background:#5C1A2E; color:#F9E4EC; border:0.5px solid #3D0F1E; }
 .ev-salida { background:#FBEAF0; color:#72243E; border:0.5px solid #ED93B1; }
-/* All sections — bright coral, stands out against all section colours */
 .ev-cross { background:#D85A30; color:#ffffff; border:0.5px solid #993C1D; font-weight:500; letter-spacing:0.01em; }
 
 .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-tertiary); font-size: 13px; border: 0.5px dashed var(--border-mid); border-radius: var(--radius-lg); }
 
-/* Month grid */
 .cal-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px; background: var(--border-light); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); overflow: hidden; }
 .day-header { background: var(--bg-secondary); text-align: center; padding: 7px 2px; font-size: 10px; font-weight: 500; color: var(--text-secondary); letter-spacing: .05em; }
 .day-cell { background: var(--bg-primary); min-height: 90px; padding: 0; transition: background .1s; display: flex; flex-direction: column; }
@@ -122,7 +116,6 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 .ev-del:hover { opacity: 1 !important; }
 .more { font-size: 10px; color: var(--text-tertiary); }
 
-/* Week view */
 .week-view { display: flex; flex-direction: column; gap: 1px; background: var(--border-light); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); overflow: hidden; }
 .week-row { display: grid; grid-template-columns: 72px 1fr; background: var(--bg-primary); min-height: 58px; }
 .wlabel { background: var(--bg-secondary); padding: 10px 8px; border-right: 0.5px solid var(--border-light); display: flex; flex-direction: column; justify-content: center; }
@@ -135,7 +128,6 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 .wev-del { background: none; border: none; cursor: pointer; font-size: 11px; color: var(--text-tertiary); padding: 2px 5px; border-radius: 3px; flex-shrink: 0; margin-top: 1px; }
 .wev-del:hover { background: rgba(220,50,50,0.1); color: #a32d2d; }
 
-/* Event detail popup */
 .detail-popup { position: fixed; z-index: 250; background: var(--bg-primary); border: 0.5px solid var(--border-mid); border-radius: var(--radius-lg); padding: 1rem; width: 280px; max-width: 90vw; box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
 .detail-popup h4 { font-size: 13px; font-weight: 500; margin-bottom: 8px; color: var(--text-primary); }
 .detail-row { display: flex; gap: 6px; margin-bottom: 5px; flex-wrap: wrap; }
@@ -145,7 +137,6 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 .class-chip { font-size: 10px; padding: 2px 7px; border-radius: 999px; background: var(--bg-secondary); color: var(--text-secondary); border: 0.5px solid var(--border-light); }
 .detail-close { position: absolute; top: 8px; right: 10px; background: none; border: none; cursor: pointer; font-size: 14px; color: var(--text-tertiary); }
 
-/* Settings panel */
 .settings-panel { background: var(--bg-secondary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
 .settings-panel h3 { font-size: 13px; font-weight: 500; margin-bottom: 1rem; }
 .pw-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
@@ -157,14 +148,12 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 .btn-sm-primary { background: var(--text-primary); color: var(--bg-primary); }
 .btn-sm-outline { background: none; border: 0.5px solid var(--border-mid) !important; color: var(--text-secondary); }
 
-/* Legend */
 .legend-wrap { margin-top: 1.25rem; }
 .legend-title { font-size: 11px; font-weight: 500; color: var(--text-secondary); margin-bottom: 5px; margin-top: 10px; }
 .legend-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
 .litem { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-secondary); }
 .ldot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
 
-/* Modals */
 .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; z-index: 200; }
 .modal { background: var(--bg-primary); border: 0.5px solid var(--border-mid); border-radius: var(--radius-lg); padding: 1.25rem; width: 420px; max-width: 96vw; max-height: 90vh; overflow-y: auto; }
 .modal h3 { font-size: 14px; font-weight: 500; margin-bottom: 1rem; }
@@ -180,7 +169,6 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 .confirm-modal h3 { font-size: 14px; font-weight: 500; margin-bottom: 0.5rem; }
 .confirm-modal p { font-size: 13px; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.5; }
 
-/* Class selector grid */
 .class-section-block { margin-bottom: 10px; }
 .class-section-title { font-size: 11px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
 .class-grid { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -192,8 +180,6 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 .select-all-btn { font-size: 10px; padding: 3px 8px; border-radius: var(--radius-md); border: 0.5px solid var(--border-light); background: none; color: var(--text-tertiary); cursor: pointer; margin-left: 4px; }
 .select-all-btn:hover { color: var(--text-secondary); }
 
-
-/* Range / multi-day event indicators */
 .ev-range-start::before { content:''; display:inline-block; width:6px; height:6px; border-radius:50%; background:currentColor; margin-right:4px; opacity:0.7; vertical-align:middle; }
 .ev-range-mid  { opacity:0.75; font-style:italic; }
 .ev-range-mid::before  { content:''; display:inline-block; width:4px; height:4px; border-radius:50%; background:currentColor; margin-right:4px; opacity:0.5; vertical-align:middle; }
@@ -203,8 +189,6 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 .date-mode-btn.active { background:var(--bg-secondary); color:var(--text-primary); font-weight:500; }
 .date-range-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 
-
-/* Sync status bar */
 .sync-bar { display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-tertiary); margin-bottom:0.75rem; }
 .sync-dot { width:7px; height:7px; border-radius:50%; background:var(--text-tertiary); flex-shrink:0; }
 .sync-dot.ok { background:#27A35A; }
@@ -214,7 +198,6 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 .sync-spinner { display:inline-block; width:10px; height:10px; border:1.5px solid var(--border-mid); border-top-color:var(--text-secondary); border-radius:50%; animation:spin 0.7s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg) } }
 
-/* Print modal */
 .print-modal { background: var(--bg-primary); border: 0.5px solid var(--border-mid); border-radius: var(--radius-lg); padding: 1.5rem; width: 500px; max-width: 96vw; max-height: 85vh; overflow-y: auto; }
 .print-modal h3 { font-size: 15px; font-weight: 500; margin-bottom: 1.25rem; color: var(--text-primary); }
 .print-filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
@@ -226,7 +209,6 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 .print-preview { margin-top: 1rem; border: 0.5px solid var(--border-light); border-radius: var(--radius-md); padding: 10px; background: var(--bg-secondary); font-size: 12px; color: var(--text-secondary); min-height: 32px; }
 .print-count { font-size: 12px; color: var(--text-info); font-weight: 500; }
 
-/* Print styles */
 @media print {
   body * { visibility: hidden; }
   #print-area, #print-area * { visibility: visible; }
@@ -290,7 +272,6 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
     <span>You can browse the calendar but cannot add or delete events.</span>
   </div>
 
-
   <div id="sync-bar" class="sync-bar" style="display:none">
     <span class="sync-dot" id="sync-dot"></span>
     <span id="sync-msg">Connecting...</span>
@@ -332,19 +313,14 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 <div class="toast" id="toast"></div>
 
 <script>
-// ── CONFIGURATION — paste your Web App URL here ──────────────
 const SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbydfWSut_2UjEh2-AJ6DMry3oNJgR7d7ET0AmCDBkGkuk4YgePGBwJrBB1N1alJAPoy0w/exec';
-// ─────────────────────────────────────────────────────────────
 
 const TODAY  = new Date();
-// fmt(date) — converts a Date object or YYYY-MM-DD string to YYYY-MM-DD
-// Uses local date parts to avoid UTC timezone shift
 const fmt = d => {
-  if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d; // already formatted
+  if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
   const r = (d instanceof Date) ? d : new Date(d);
   return r.getFullYear()+'-'+String(r.getMonth()+1).padStart(2,'0')+'-'+String(r.getDate()).padStart(2,'0');
 };
-// Safe date parse — treats YYYY-MM-DD as local midnight, not UTC
 const parseLocalDate = s => {
   if (!s) return new Date();
   const [y,m,d] = s.split('-').map(Number);
@@ -365,7 +341,6 @@ function classSection(c) {
   return 'Senior';
 }
 
-/* ── Session / auth ──────────────────────────────────────────── */
 let currentRole = null;
 let sessionToken = null;
 let loginTab = 'viewer';
@@ -380,153 +355,6 @@ function setLoginTab(t) {
   document.getElementById('pw-input').focus();
 }
 
-/* ── Print / PDF ─────────────────────────────────────────────── */
-function openPrintModal() {
-  const backdrop = document.createElement('div');
-  backdrop.className = 'modal-backdrop';
-  backdrop.id = 'print-modal-backdrop';
-
-  const sections = ['Junior','Middle','Senior','All sections'];
-  const types    = ['activity','test','salida','feriado','sports'];
-  const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'All sections',feriado:'Feriado',sports:'Sports'};
-
-  const secChecks = sections.map(s =>
-    '<label class="print-check"><input type="checkbox" class="psc" value="'+s+'" checked> '+s+'</label>'
-  ).join('');
-  const typeChecks = types.map(t =>
-    '<label class="print-check"><input type="checkbox" class="ptc" value="'+t+'" checked> '+typeLabels[t]+'</label>'
-  ).join('');
-
-  const today = fmt(TODAY);
-  const yearEnd = TODAY.getFullYear() + '-12-31';
-
-  backdrop.innerHTML = '<div class="print-modal">'
-    +'<h3>&#128438; Print / Export PDF</h3>'
-    +'<div class="print-filter-row">'
-    +'<div class="print-filter-block"><label>From date</label><input type="date" id="pf-from" value="'+today+'"></div>'
-    +'<div class="print-filter-block"><label>To date</label><input type="date" id="pf-to" value="'+yearEnd+'"></div>'
-    +'</div>'
-    +'<div class="print-filter-block" style="margin-bottom:10px"><label>Sections</label><div class="print-check-grid">'+secChecks+'</div></div>'
-    +'<div class="print-filter-block" style="margin-bottom:10px"><label>Types</label><div class="print-check-grid">'+typeChecks+'</div></div>'
-    +'<div class="print-filter-block" style="margin-bottom:12px"><label>Class (optional — leave blank for all)</label>'
-    +'<input type="text" id="pf-class" placeholder="e.g. 5A or leave blank for all classes"></div>'
-    +'<div class="print-preview" id="print-preview">Select filters to see matching events.</div>'
-    +'<div class="modal-actions" style="margin-top:1rem">'
-    +'<button class="btn-cancel" id="print-cancel">Cancel</button>'
-    +'<button class="btn-save" id="print-go">&#128438; Open Print / PDF</button>'
-    +'</div></div>';
-
-  document.body.appendChild(backdrop);
-
-  function getFiltered() {
-    const from = document.getElementById('pf-from').value;
-    const to   = document.getElementById('pf-to').value;
-    const classFilter = document.getElementById('pf-class').value.trim().toUpperCase();
-    const selSecs  = [...document.querySelectorAll('.psc:checked')].map(e=>e.value);
-    const selTypes = [...document.querySelectorAll('.ptc:checked')].map(e=>e.value);
-
-    return events.filter(ev => {
-      if (ev.date < from || ev.date > to) return false;
-      const sk = evSectionKey(ev);
-      const secLabel = sk==='Cross'?'All sections':(sk==='Sports'?'Sports':(sk==='Salida'?'Salida':sk));
-      if (!selSecs.includes(secLabel)) return false;
-      const typeKey = sk==='Cross'?'cross':ev.type;
-      if (!selTypes.includes(typeKey)) return false;
-      if (classFilter && ev.classes && ev.classes.length>0) {
-        if (!ev.classes.some(c=>c.toUpperCase()===classFilter)) return false;
-      }
-      return true;
-    }).sort((a,b)=>a.date.localeCompare(b.date));
-  }
-
-  function updatePreview() {
-    const filtered = getFiltered();
-    const preview = document.getElementById('print-preview');
-    if (filtered.length===0) {
-      preview.innerHTML = 'No events match the selected filters.';
-    } else {
-      preview.innerHTML = '<span class="print-count">'+filtered.length+' event(s) found</span> — '
-        + filtered.slice(0,3).map(e=>e.date+' '+e.title).join(', ')
-        + (filtered.length>3?' ...':'');
-    }
-  }
-
-  backdrop.addEventListener('change', updatePreview);
-  backdrop.addEventListener('input', updatePreview);
-  updatePreview();
-
-  document.getElementById('print-cancel').onclick = ()=>backdrop.remove();
-  document.getElementById('print-go').onclick = ()=>{
-    const filtered = getFiltered();
-    if (filtered.length===0) { alert('No events match your filters.'); return; }
-    backdrop.remove();
-    doPrint(filtered);
-  };
-}
-
-function doPrint(filtered) {
-  const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'All sections',feriado:'Feriado',sports:'Sports'};
-  const typeColors = {
-    activity:'#1A6B35', test:'#1a1a18', salida:'#72243E',
-    cross:'#D85A30', feriado:'#1A6B35', sports:'#1B4FD8'
-  };
-
-  // Group by date
-  const byDateMap = {};
-  filtered.forEach(e => {
-    if (!byDateMap[e.date]) byDateMap[e.date] = [];
-    byDateMap[e.date].push(e);
-  });
-
-  const dates = Object.keys(byDateMap).sort();
-
-  let html = '<div style="font-family:Arial,sans-serif;max-width:750px;margin:0 auto;padding:20px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:2px solid #1a1a18;padding-bottom:12px">'
-    +'<h1 style="font-size:20px;font-weight:700;margin:0">School Calendar</h1>'
-    +'<span style="font-size:12px;color:#888">Printed: '+new Date().toLocaleDateString('es-CL')+'</span>'
-    +'</div>';
-
-  dates.forEach(date => {
-    const d = new Date(date+'T12:00:00');
-    const dateLabel = d.toLocaleDateString('es-CL', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-    html += '<div class="print-event-row" style="margin-bottom:14px">'
-      +'<div style="font-size:12px;font-weight:600;color:#444;text-transform:capitalize;margin-bottom:5px;padding-bottom:3px;border-bottom:0.5px solid #ddd">'+dateLabel+'</div>';
-
-    byDateMap[date].forEach(e => {
-      const sk = evSectionKey(e);
-      const secLabel = sk==='Cross'?'All sections':(sk==='Sports'?'Sports':(sk==='Salida'?'Salida':sk));
-      const typeLabel = typeLabels[e.type] || e.type;
-      const color = e.type==='test' ? (sk==='Senior'?'#5C1A2E':'#1a1a18') : (typeColors[e.type]||'#444');
-      const classStr = e.classes&&e.classes.length ? e.classes.join(', ') : 'All sections';
-      html += '<div style="display:flex;align-items:flex-start;gap:10px;padding:6px 8px;margin-bottom:4px;background:#f9f9f7;border-radius:5px;border-left:3px solid '+color+'">'
-        +'<div style="flex:1">'
-        +'<div style="font-size:13px;font-weight:600;color:#1a1a18">'+e.title+'</div>'
-        +'<div style="font-size:11px;color:#666;margin-top:2px">'+secLabel+' &nbsp;·&nbsp; '+classStr+'</div>'
-        +'</div>'
-        +'<span style="font-size:10px;padding:2px 8px;border-radius:999px;background:'+color+';color:#fff;white-space:nowrap;flex-shrink:0">'+typeLabel+'</span>'
-        +'</div>';
-    });
-
-    html += '</div>';
-  });
-
-  html += '<div style="margin-top:24px;font-size:10px;color:#aaa;text-align:center;border-top:0.5px solid #eee;padding-top:8px">Redland School Calendar &nbsp;·&nbsp; '+filtered.length+' events</div>';
-  html += '</div>';
-
-  // Open in new window for printing
-  const win = window.open('','_blank','width=800,height=700');
-  win.document.write('<!DOCTYPE html><html><head><title>School Calendar</title>'
-    +'<style>body{margin:0;padding:0} @media print{.no-print{display:none}} '
-    +'@page{margin:15mm}</style></head><body>'
-    +'<div class="no-print" style="background:#f0f0ee;padding:12px 20px;display:flex;gap:10px;align-items:center">'
-    +'<button onclick="window.print()" style="background:#1a1a18;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer">&#128438; Print / Save as PDF</button>'
-    +'<span style="font-size:12px;color:#666">To save as PDF: choose <strong>Save as PDF</strong> as the printer</span>'
-    +'<button onclick="window.close()" style="margin-left:auto;background:none;border:0.5px solid #ccc;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer">Close</button>'
-    +'</div>'
-    +html+'</body></html>');
-  win.document.close();
-}
-
 document.getElementById('pw-input').focus();
 
 function doLogin() {
@@ -537,7 +365,6 @@ function doLogin() {
   document.querySelector('.login-btn').textContent = 'Checking...';
 
   if (SCRIPT_URL === 'PASTE_YOUR_WEB_APP_URL_HERE') {
-    // Offline / demo mode — use localStorage passwords
     const stored = getLocalPasswords();
     if (loginTab==='viewer' && pw===stored.viewer) { startSession('viewer', pw); }
     else if (loginTab==='editor' && pw===stored.editor) { startSession('editor', pw); }
@@ -578,8 +405,6 @@ function startSession(role, token) {
   document.getElementById('settings-btn').style.display = ed ? 'inline-block' : 'none';
   document.getElementById('export-btn').style.display = ed ? 'inline-block' : 'none';
   document.getElementById('import-btn').style.display = ed ? 'inline-block' : 'none';
-  const pb = document.getElementById('publish-btn');
-  if (pb) pb.style.display = ed ? 'inline-block' : 'none';
   loadEvents();
 }
 
@@ -596,7 +421,6 @@ function doLogout() {
 
 const isEditor = () => currentRole === 'editor';
 
-/* ── Local password fallback (for offline / demo use) ───────── */
 const PW_KEY = 'scal_pw2';
 function getLocalPasswords() {
   try { const p = JSON.parse(localStorage.getItem(PW_KEY)); if (p&&p.viewer&&p.editor) return p; } catch(e) {}
@@ -604,7 +428,6 @@ function getLocalPasswords() {
 }
 function saveLocalPasswords(v, e) { localStorage.setItem(PW_KEY, JSON.stringify({viewer:v,editor:e})); }
 
-/* ── Settings panel ─────────────────────────────────────────── */
 function toggleSettings() {
   const p = document.getElementById('settings-panel');
   p.style.display = p.style.display==='none' ? 'block' : 'none';
@@ -632,14 +455,12 @@ function savePasswords() {
   }
 }
 
-/* ── Toast ───────────────────────────────────────────────────── */
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-/* ── Sync status bar ─────────────────────────────────────────── */
 function setSyncStatus(state, msg) {
   const dot = document.getElementById('sync-dot');
   const lbl = document.getElementById('sync-msg');
@@ -647,7 +468,6 @@ function setSyncStatus(state, msg) {
   lbl.textContent = msg;
 }
 
-/* ── API layer — JSONP (works from any host) ─────────────────── */
 let _cbN = 0;
 function apiCall(payload, useToken) {
   if (useToken !== false) payload.token = sessionToken;
@@ -681,7 +501,6 @@ function apiCall(payload, useToken) {
   });
 }
 
-// For large payloads — split into chunks with retry on failure
 function apiCallLarge(action, eventsArr) {
   const CHUNK = 5;
   const RETRY = 3;
@@ -717,7 +536,6 @@ function apiCallLarge(action, eventsArr) {
   return sendChunkWithRetry(0, 1).then(() => ({ ok: true }));
 }
 
-/* ── Calendar data ───────────────────────────────────────────── */
 let events = [];
 let nextId = 1;
 let cur = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
@@ -740,37 +558,6 @@ function loadEvents() {
     .catch(() => setSyncStatus('err', 'Could not load events — click ↻ Refresh to try again'));
 }
 
-function publishToGitHub() {
-  if (!isEditor()) return;
-  // Download events.json then show instructions to upload to GitHub
-  const payload = JSON.stringify({ version:2, exportedAt: new Date().toISOString(), events, nextId }, null, 2);
-  const blob = new Blob([payload], {type:'application/json'});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = 'events.json'; a.click();
-  URL.revokeObjectURL(url);
-  showToast('events.json downloaded — upload it to GitHub to publish.');
-  // Show instructions modal
-  const b = document.createElement('div');
-  b.className = 'modal-backdrop';
-    const div = document.createElement('div');
-  div.className = 'modal';
-  div.style.width = '480px';
-  div.innerHTML = '<h3>&#128278; Publish events</h3>'
-    + '<p style="font-size:13px;margin-bottom:1rem">events.json downloaded. Now upload to GitHub:</p>'
-    + '<ol style="font-size:13px;line-height:2;padding-left:1.2rem">'
-    + '<li>Go to github.com/PLoayza25/RedlandSchoolCalendar2026</li>'
-    + '<li>Click <b>Add file → Upload files</b></li>'
-    + '<li>Drag and drop <b>events.json</b></li>'
-    + '<li>Click <b>Commit changes</b></li>'
-    + '<li>Wait 1 min — viewers see the update</li>'
-    + '</ol>'
-    + '<div class="modal-actions"><button class="btn-save" data-closepub="1">Got it</button></div>';
-  b.appendChild(div);
-  document.body.appendChild(b);
-}
-
-/* ── Helpers ─────────────────────────────────────────────────── */
 function isCrossSchool(e) {
   if (e.type==='cross') return true;
   if (!e.classes||e.classes.length===0) return false;
@@ -779,7 +566,6 @@ function isCrossSchool(e) {
 }
 
 function isMiddleSenior(e) {
-  // True when event covers ONLY Middle and Senior classes (no Junior)
   if (!e.classes||e.classes.length===0) return false;
   if (e.type==='cross'||e.type==='feriado'||e.type==='sports'||e.type==='salida') return false;
   const secs = new Set(e.classes.map(c=>classSection(c)));
@@ -842,7 +628,6 @@ function visible() {
     if (sk==='Feriado') return activeType.has('feriado');
     if (sk==='Salida')  return activeType.has('salida');
     if (e.type==='sports') return activeSec.has(sk) && activeType.has('sports');
-    // Middle+Senior events: show if Middle OR Senior is active
     if (sk==='MiddleSenior') return (activeSec.has('Middle')||activeSec.has('Senior')) && activeType.has(e.type);
     const typeKey = (sk==='Cross')?'cross':e.type;
     return activeSec.has(sk)&&activeType.has(typeKey);
@@ -859,16 +644,6 @@ function isWholeSection(e) {
   if (!e.classes||e.classes.length===0) return true;
   return ['Junior','Middle','Senior'].some(sec=>CLASSES[sec].every(c=>e.classes.includes(c)));
 }
-/* Sort order:
-   -1  Feriado (whole day)
-    0  All-sections (Cross)
-    1  Salidas
-    2  Junior activities + sports  (by grade)
-    3  Middle activities + sports  (by grade)
-    4  Senior activities + sports  (by grade)
-    5  Tests (by grade across all sections)
-*/
-// Section priority: Feriado → All sections → Middle&Senior → Junior → Middle → Senior → Salida → Tests
 const SEC_ORDER = {Cross:0, MiddleSenior:1, Junior:2, Middle:3, Senior:4, Salida:5, Feriado:-1};
 
 function eventPriority(e) {
@@ -882,7 +657,6 @@ function eventPriority(e) {
 }
 
 function timeRank(e) {
-  // Returns sortable time string; events with no time sort after timed events
   if (!e.time) return '99:99';
   return e.time;
 }
@@ -892,16 +666,13 @@ function byDate(d) {
   return evs.sort((a,b)=>{
     const pa=eventPriority(a), pb=eventPriority(b);
     if (pa!==pb) return pa-pb;
-    // Within tests: sort by grade
     if (pa===6) return gradeRank(a)-gradeRank(b);
-    // Within same section group: sort by time first, then by grade
     const ta=timeRank(a), tb=timeRank(b);
     if (ta!==tb) return ta.localeCompare(tb);
     return gradeRank(a)-gradeRank(b);
   });
 }
 
-/* ── Detail popup ────────────────────────────────────────────── */
 let activePopup = null;
 function closePopup() { if (activePopup) { activePopup.remove(); activePopup=null; } }
 
@@ -920,7 +691,6 @@ function showDetail(evId, anchorEl) {
   const dateDisplay = e.groupId ? (e.rangeStart+' \u2192 '+e.rangeEnd) : e.date;
   const timeDisplay = e.time ? e.time : null;
   const typeDisplay = isCross?'All sections':(e.type==='sports'?'Sports':e.type.charAt(0).toUpperCase()+e.type.slice(1));
-  // For Middle+Senior, show "Middle + Senior" instead of listing all classes
   let classesDisplay;
   if (isCross) { classesDisplay = chips || '<span class="detail-val">All sections</span>'; }
   else if (isMS) { classesDisplay = '<span class="detail-val">Middle + Senior</span>'; }
@@ -932,6 +702,12 @@ function showDetail(evId, anchorEl) {
     +'<div class="detail-row"><span class="detail-label">Section</span><span class="detail-val">'+secDisplay+'</span></div>';
   if (e.type!=='cross'||chips) {
     html += '<div class="detail-row"><span class="detail-label">Classes</span><div><div class="class-chips">'+classesDisplay+'</div></div></div>';
+  }
+  if (e.atype) {
+    html += '<div class="detail-row"><span class="detail-label">Eval. type</span><span class="detail-val">'+e.atype+'</span></div>';
+  }
+  if (e.criterios && e.criterios.length) {
+    html += '<div class="detail-row"><span class="detail-label">Criterios</span><span class="detail-val">'+e.criterios.join(', ')+'</span></div>';
   }
   if (isEditor()) {
     html += '<div style="margin-top:10px;display:flex;gap:6px;justify-content:flex-end">'
@@ -954,7 +730,6 @@ document.addEventListener('click', e=>{
   if (activePopup&&!activePopup.contains(e.target)&&!e.target.classList.contains('ev')&&!e.target.classList.contains('wev')) closePopup();
 });
 
-/* ── Delete ──────────────────────────────────────────────────── */
 function deleteEventLocal(id) { events=events.filter(e=>e.id!==id); render(); }
 
 function confirmDelete(id) {
@@ -1012,11 +787,10 @@ function showDeleteRangeModal(id, groupId, title, rangeStart, rangeEnd) {
   };
 }
 
-/* ── Render month ────────────────────────────────────────────── */
 function renderMonth() {
   const y=cur.getFullYear(), m=cur.getMonth();
   document.getElementById('mlabel').textContent = MONTHS[m]+' '+y;
-  const firstDay=(new Date(y,m,1).getDay()+6)%7; // Mon=0...Sat=5
+  const firstDay=(new Date(y,m,1).getDay()+6)%7;
   const dim=new Date(y,m+1,0).getDate();
   const prevDim=new Date(y,m,0).getDate();
   if (events.length===0) {
@@ -1027,26 +801,22 @@ function renderMonth() {
   let html = '<div class="cal-grid">';
   DAYS.forEach(d=>html+='<div class="day-header">'+d+'</div>');
   let cells=[];
-  // Add current month days, skipping Sundays
   for(let i=1;i<=dim;i++){
     if(new Date(y,m,i).getDay()!==0) cells.push({d:i,mo:m,other:false});
   }
-  // Prepend leading days from prev month (Mon-Sat only) to fill first row
-  const firstMon = new Date(y,m,1).getDay(); // 0=Sun,1=Mon...6=Sat
-  const leadCount = firstMon===0 ? 0 : firstMon-1; // Mon=0 leads, Tue=1 lead, etc
+  const firstMon = new Date(y,m,1).getDay();
+  const leadCount = firstMon===0 ? 0 : firstMon-1;
   let leading=[];
   for(let i=leadCount;i>=1;i--){
     const d=prevDim-i+1;
     if(new Date(y,m-1,d).getDay()!==0) leading.push({d:d,mo:m-1,other:true});
   }
   cells = leading.concat(cells);
-  // Pad end with next month days (Mon-Sat only) — max 6 rows (36 cells)
   let nextDay=1;
   while(cells.length%6!==0){
     if(new Date(y,m+1,nextDay).getDay()!==0) cells.push({d:nextDay,mo:m+1,other:true});
     nextDay++;
   }
-  // Remove last row if it contains only next-month days and last month day is already shown
   while(cells.length>6 && cells.slice(-6).every(c=>c.other)){
     cells = cells.slice(0,-6);
   }
@@ -1055,24 +825,22 @@ function renderMonth() {
     const isT=dt===fmt(TODAY);
     const evs=byDate(dt);
     const hasFeriado=events.some(e=>e.type==='feriado'&&e.date===dt);
-    // Split events into top (non-test) and bottom (tests)
     const topEvs = evs.filter(e=>e.type!=='test');
     const testEvs = evs.filter(e=>e.type==='test');
     html+='<div class="day-cell'+(c.other?' other':'')+(isT?' today':'')+(hasFeriado?' feriado':'')+'"><div class="day-cell-top"><div class="day-num">'+c.d+'</div>';
     topEvs.slice(0,3).forEach(e=>{
       const sk=evSectionKey(e);
-      const lbl=sk==='Cross'?'All sections: '+e.title:(classesLabel(e)?classesLabel(e)+': '+e.title:e.title);
+      const lbl=(sk==='Cross'?'All sections: '+e.title:(classesLabel(e)?classesLabel(e)+': '+e.title:e.title)) + (e.atype?' · '+e.atype:'');
       const rangeClass=e.rangePosition?' ev-range-'+e.rangePosition:'';
       const tpfx=e.time&&/^\d{1,2}:\d{2}$/.test(e.time)?e.time+' ':''; 
       html+='<div class="ev-wrap"><span class="ev '+evChipClass(e)+rangeClass+'" onclick="showDetail('+e.id+',this)" title="'+e.title+'">'+tpfx+lbl+'</span></div>';
     });
     if(topEvs.length>3) html+='<div class="more">+'+(topEvs.length-3)+' more</div>';
     html+='</div>';
-    // Bottom half — tests
     html+='<div class="day-cell-divider"></div><div class="day-cell-bottom">';
     if(testEvs.length>0){
       testEvs.slice(0,2).forEach(e=>{
-        const lbl=classesLabel(e)?classesLabel(e)+': '+e.title:e.title;
+        const lbl=(classesLabel(e)?classesLabel(e)+': '+e.title:e.title) + (e.atype?' · '+e.atype:'');
         const rangeClass=e.rangePosition?' ev-range-'+e.rangePosition:'';
         const tpfx=e.time&&/^\d{1,2}:\d{2}$/.test(e.time)?e.time+' ':''; 
         html+='<div class="ev-wrap"><span class="ev '+evChipClass(e)+rangeClass+'" onclick="showDetail('+e.id+',this)" title="'+e.title+'">'+tpfx+lbl+'</span></div>';
@@ -1085,7 +853,6 @@ function renderMonth() {
   document.getElementById('cal-view').innerHTML=html;
 }
 
-/* ── Render week ─────────────────────────────────────────────── */
 function weekStart() {
   const d=new Date(TODAY); const day=d.getDay()||7; d.setDate(d.getDate()-day+1+weekOff*7); return d;
 }
@@ -1097,7 +864,7 @@ function renderWeek() {
     const d=new Date(ws); d.setDate(ws.getDate()+i);
     const dt=fmt(d), isT=dt===fmt(TODAY), evs=byDate(dt);
     const hasFeriadoW=events.some(e=>e.type==='feriado'&&e.date===dt);
-    const dayName=DAYS[(d.getDay()+6)%7]; // Mon=0...Sat=5
+    const dayName=DAYS[(d.getDay()+6)%7];
     html+='<div class="week-row'+(hasFeriadoW?' feriado-row':'')+'"><div class="wlabel"><div class="wday-name">'+dayName+'</div><div class="wday-num'+(isT?' today':hasFeriadoW?' feriado':'')+'">'+d.getDate()+'</div></div>';
     html+='<div class="wevents">';
     if(!evs.length) html+='<span style="font-size:11px;color:var(--text-tertiary)">No events</span>';
@@ -1107,7 +874,7 @@ function renderWeek() {
       const isMS = sk==='MiddleSenior';
       const classInfo = isCross ? 'All sections' : isMS ? 'Middle & Senior' : (e.classes&&e.classes.length ? sk+' \u00b7 '+fullClassesLabel(e) : sk);
       const wTimeLbl = e.time ? '<span style="font-size:10px;font-weight:600;margin-right:4px">'+e.time+'</span>' : '';
-      html+='<div class="wev-wrap"><div class="wev '+evChipClass(e)+'" onclick="showDetail('+e.id+',this)">'+wTimeLbl+'<strong>'+e.title+'</strong><br><span style="font-size:10px;opacity:0.85">'+classInfo+' \u00b7 '+(isCross?'all sections':e.type)+'</span></div></div>';
+      html+='<div class="wev-wrap"><div class="wev '+evChipClass(e)+'" onclick="showDetail('+e.id+',this)">'+wTimeLbl+'<strong>'+e.title+'</strong><br><span style="font-size:10px;opacity:0.85">'+classInfo+' \u00b7 '+(e.atype||(isCross?'all sections':e.type))+'</span></div></div>';
     });
     html+='</div></div>';
   }
@@ -1115,7 +882,6 @@ function renderWeek() {
   document.getElementById('cal-view').innerHTML=html;
 }
 
-/* ── Legend ──────────────────────────────────────────────────── */
 function renderLegend() {
   document.getElementById('legend').innerHTML = ''
     +'<div class="legend-title">Junior \u2014 purple &nbsp;&middot;&nbsp; Middle \u2014 teal &nbsp;&middot;&nbsp; Senior \u2014 amber &nbsp;&middot;&nbsp; Light fill = activity &nbsp;&middot;&nbsp; Dark fill = test</div>'
@@ -1142,7 +908,6 @@ function renderLegend() {
 
 function render() { viewMode==='month'?renderMonth():renderWeek(); renderLegend(); }
 
-/* ── Navigation ──────────────────────────────────────────────── */
 document.getElementById('prev').onclick=()=>{ if(viewMode==='month'){ cur=new Date(cur.getFullYear(),cur.getMonth()-1,1); } else weekOff--; render(); };
 document.getElementById('next').onclick=()=>{ if(viewMode==='month'){ cur=new Date(cur.getFullYear(),cur.getMonth()+1,1); } else weekOff++; render(); };
 document.getElementById('btn-month').onclick=()=>{ viewMode='month'; document.getElementById('btn-month').classList.add('active'); document.getElementById('btn-week').classList.remove('active'); render(); };
@@ -1158,7 +923,6 @@ document.querySelectorAll('.pill[data-f]').forEach(p=>{
   };
 });
 
-/* ── Class selector helpers ──────────────────────────────────── */
 function buildClassSelector() {
   let html='';
   ['Junior','Middle','Senior'].forEach(sec=>{
@@ -1178,7 +942,6 @@ function selectAllSection(sec) { document.querySelectorAll('#cg-'+sec+' .class-t
 function clearSection(sec) { document.querySelectorAll('#cg-'+sec+' .class-toggle').forEach(el=>el.classList.remove('selected')); }
 function getSelectedClasses() { return [...document.querySelectorAll('.class-toggle.selected')].map(el=>el.dataset.class); }
 
-/* ── Add event modal ─────────────────────────────────────────── */
 function openEditModal(id) {
   if (!isEditor()) return;
   const ev = events.find(e=>e.id===id);
@@ -1186,13 +949,7 @@ function openEditModal(id) {
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
 
-  // Build date mode — if it's part of a range, show info
   const isRange = !!ev.groupId;
-  const dateSection = isRange
-    ? '<div style="font-size:12px;color:var(--text-secondary);background:var(--bg-secondary);border-radius:var(--border-radius-md);padding:7px 10px;margin-bottom:10px">&#9432; This is a range event ('
-      +ev.rangeStart+' → '+ev.rangeEnd+'). Editing will update <strong>this day only</strong>. To edit the full range, delete it and re-add.</div>'
-      +'<label>Date</label><input type="date" id="ev-date-edit" value="'+ev.date+'" readonly style="opacity:0.6">'
-    : '<label>Date</label><input type="date" id="ev-date-edit" value="'+ev.date+'">';
 
   const typeOpts = ['activity','test','salida','cross','feriado','sports']
     .map(t=>'<option value="'+t+'"'+(ev.type===t?' selected':'')+'>'+
@@ -1225,7 +982,6 @@ function openEditModal(id) {
     document.getElementById('edit-class-wrap').style.display = (t==='feriado'||t==='sports')?'none':'block';
     document.getElementById('cross-notice-edit').style.display = t==='cross'?'block':'none';
   };
-  // trigger once to set initial state
   document.getElementById('ev-type-edit').dispatchEvent(new Event('change'));
 
   document.getElementById('edit-cancel').onclick = ()=>backdrop.remove();
@@ -1246,13 +1002,11 @@ function openEditModal(id) {
       events = events.map(e=>e.id===id?updated:e);
       render(); showToast('Event updated.'); setSyncStatus('ok','Local mode'); return;
     }
-    // Delete old + add new (simplest approach for server-side edit)
     apiCall({action:'deleteEvent',id:id})
       .then(()=>apiCall({action:'addEvents',events:[updated]}))
       .then(d=>{
         if(d.ok){
           events=events.map(e=>e.id===id?updated:e); render(); showToast('Event updated.'); setSyncStatus('ok','Synced '+new Date().toLocaleTimeString());
-         
         } else showToast('Error saving: '+d.error);
       }).catch(()=>showToast('Connection error — changes not saved.'));
   };
@@ -1411,7 +1165,6 @@ function openModal() {
 
 document.getElementById('open-add').onclick = openModal;
 
-/* ── Export / Import ─────────────────────────────────────────── */
 function normaliseEvent(raw) {
   const safeDate = d => {
     if (!d) return '';
@@ -1430,6 +1183,10 @@ function normaliseEvent(raw) {
     rangeStart:    raw.rangeStart ? raw.rangeStart.toString().slice(0,10) : null,
     rangeEnd:      raw.rangeEnd ? raw.rangeEnd.toString().slice(0,10) : null,
     rangePosition: raw.rangePosition||null,
+    subject:       raw.subject||'',
+    atype:         raw.atype||'',
+    tema:          raw.tema||'',
+    criterios:     Array.isArray(raw.criterios)?raw.criterios:[]
   };
 }
 
@@ -1470,21 +1227,17 @@ function doImport(mode, incoming, newOnly, dupCount) {
   const toAdd = mode==='replace' ? incoming : newOnly;
   if(toAdd.length===0){ showToast('Nothing new to import.'); return; }
 
-  // Offline / demo mode
   if(SCRIPT_URL==='PASTE_YOUR_WEB_APP_URL_HERE'){
     if(mode==='replace'){ events=incoming.map((e,i)=>({...e,id:i+1})); nextId=events.length+1; }
     else { let maxId=events.length?Math.max(...events.map(e=>e.id)):0; const added=newOnly.map(e=>({...e,id:++maxId})); events=[...events,...added]; nextId=maxId+1; }
     render(); showToast(toAdd.length+' event(s) '+(mode==='replace'?'loaded':'merged')+(dupCount?', '+dupCount+' duplicate(s) skipped.':'.')); return;
   }
 
-  // Assign clean sequential IDs
   const baseId = mode==='replace' ? 1 : ((events.length?Math.max(...events.map(x=>x.id)):0)+1);
   const prepared = toAdd.map((e,i)=>({...e, id: baseId+i}));
 
   setSyncStatus('loading','Importing '+prepared.length+' events...');
 
-  // Replace: use clearAndAdd (one single call — clears sheet then writes all rows at once)
-  // Merge: use addEvents (appends rows in one batch call)
   const action = mode==='replace' ? 'clearAndAdd' : 'addEvents';
 
   apiCallLarge(action, prepared)
@@ -1524,19 +1277,13 @@ function showImportChoiceModal(incoming, newOnly, dupCount) {
   document.getElementById('imp-merge').onclick=()=>{ backdrop.remove(); doImport('merge',incoming,newOnly,dupCount); };
 }
 
-/* ── Print / PDF ─────────────────────────────────────────────── */
 function openPrintModal() {
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
   backdrop.id = 'print-modal-backdrop';
 
-  const sections = ['Junior','Middle','Senior','All sections'];
-  const types    = ['activity','test','salida','feriado','sports'];
   const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'All sections',feriado:'Feriado',sports:'Sports'};
-
-  const secChecks = sections.map(s =>
-    '<label class="print-check"><input type="checkbox" class="psc" value="'+s+'" checked> '+s+'</label>'
-  ).join('');
+  const types    = ['activity','test','salida','feriado','sports'];
   const typeChecks = types.map(t =>
     '<label class="print-check"><input type="checkbox" class="ptc" value="'+t+'" checked> '+typeLabels[t]+'</label>'
   ).join('');
@@ -1544,16 +1291,28 @@ function openPrintModal() {
   const today = fmt(TODAY);
   const yearEnd = TODAY.getFullYear() + '-12-31';
 
+  const SUBJECTS = ['Lenguaje','Inglés','Francés','Matemáticas','Ciencias','Biología','Química','Física','Música','Arte','Ed.Física y para la Salud','Diseño','Individuo y Sociedades'];
+  const subjectOpts = '<option value="">All subjects</option>' + SUBJECTS.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
+
   backdrop.innerHTML = '<div class="print-modal">'
     +'<h3>&#128438; Print / Export PDF</h3>'
     +'<div class="print-filter-row">'
     +'<div class="print-filter-block"><label>From date</label><input type="date" id="pf-from" value="'+today+'"></div>'
     +'<div class="print-filter-block"><label>To date</label><input type="date" id="pf-to" value="'+yearEnd+'"></div>'
     +'</div>'
-    +'<div class="print-filter-block" style="margin-bottom:10px"><label>Sections</label><div class="print-check-grid">'+secChecks+'</div></div>'
     +'<div class="print-filter-block" style="margin-bottom:10px"><label>Types</label><div class="print-check-grid">'+typeChecks+'</div></div>'
-    +'<div class="print-filter-block" style="margin-bottom:12px"><label>Class (optional — leave blank for all)</label>'
-    +'<input type="text" id="pf-class" placeholder="e.g. 5A or leave blank for all classes"></div>'
+    +'<div class="print-filter-block" style="margin-bottom:10px"><label>School level</label>'
+    +'<div class="date-mode-toggle" style="margin-bottom:8px">'
+    +'<button type="button" class="date-mode-btn active" id="pf-lvl-middle">Middle</button>'
+    +'<button type="button" class="date-mode-btn" id="pf-lvl-senior">High School</button>'
+    +'</div>'
+    +'<div class="print-check-grid" id="pf-class-grid"></div></div>'
+    +'<div class="print-filter-block" style="margin-bottom:10px"><label>Subject (optional — leave blank for all)</label>'
+    +'<select id="pf-subject">'+subjectOpts+'</select></div>'
+    +'<div class="print-filter-block" style="margin-bottom:12px"><label>Criteria (optional)</label>'
+    +'<div class="print-check-grid">'
+    +['A','B','C','D'].map(c=>'<label class="print-check"><input type="checkbox" class="pcr" value="'+c+'"> '+c+'</label>').join('')
+    +'</div></div>'
     +'<div class="print-preview" id="print-preview">Select filters to see matching events.</div>'
     +'<div class="modal-actions" style="margin-top:1rem">'
     +'<button class="btn-cancel" id="print-cancel">Cancel</button>'
@@ -1562,23 +1321,49 @@ function openPrintModal() {
 
   document.body.appendChild(backdrop);
 
+  const MIDDLE_CLASSES = CLASSES.Middle;
+  const SENIOR_CLASSES = CLASSES.Senior;
+  function renderClassGrid(classList) {
+    document.getElementById('pf-class-grid').innerHTML = classList.map(c=>
+      '<label class="print-check"><input type="checkbox" class="plv" value="'+c+'" checked> '+c+'</label>'
+    ).join('');
+  }
+  renderClassGrid(MIDDLE_CLASSES);
+  document.getElementById('pf-lvl-middle').onclick = ()=>{
+    document.getElementById('pf-lvl-middle').classList.add('active');
+    document.getElementById('pf-lvl-senior').classList.remove('active');
+    renderClassGrid(MIDDLE_CLASSES);
+    updatePreview();
+  };
+  document.getElementById('pf-lvl-senior').onclick = ()=>{
+    document.getElementById('pf-lvl-senior').classList.add('active');
+    document.getElementById('pf-lvl-middle').classList.remove('active');
+    renderClassGrid(SENIOR_CLASSES);
+    updatePreview();
+  };
+
   function getFiltered() {
     const from = document.getElementById('pf-from').value;
     const to   = document.getElementById('pf-to').value;
-    const classFilter = document.getElementById('pf-class').value.trim().toUpperCase();
-    const selSecs  = [...document.querySelectorAll('.psc:checked')].map(e=>e.value);
     const selTypes = [...document.querySelectorAll('.ptc:checked')].map(e=>e.value);
+    const selClasses = [...document.querySelectorAll('.plv:checked')].map(e=>e.value);
+    const subjFilter = document.getElementById('pf-subject').value;
+    const selCriteria = [...document.querySelectorAll('.pcr:checked')].map(e=>e.value);
 
     return events.filter(ev => {
       if (ev.date < from || ev.date > to) return false;
       const sk = evSectionKey(ev);
-      const secLabel = sk==='Cross'?'All sections':(sk==='Sports'?'Sports':(sk==='Salida'?'Salida':sk));
-      if (!selSecs.includes(secLabel)) return false;
       const typeKey = sk==='Cross'?'cross':ev.type;
-      if (!selTypes.includes(typeKey)) return false;
-      if (classFilter && ev.classes && ev.classes.length>0) {
-        if (!ev.classes.some(c=>c.toUpperCase()===classFilter)) return false;
+      if (typeKey!=='cross' && !selTypes.includes(typeKey)) return false;
+
+      if (selClasses.length && ev.classes && ev.classes.length>0) {
+        const matchesClass = ev.classes.some(c=>selClasses.includes(c));
+        if (!matchesClass) return false;
       }
+
+      if (subjFilter && ev.subject && ev.subject !== subjFilter) return false;
+      if (selCriteria.length && ev.criterios && ev.criterios.length && !ev.criterios.some(c=>selCriteria.includes(c))) return false;
+
       return true;
     }).sort((a,b)=>a.date.localeCompare(b.date));
   }
@@ -1615,7 +1400,6 @@ function doPrint(filtered) {
     cross:'#D85A30', feriado:'#1A6B35', sports:'#1B4FD8'
   };
 
-  // Group by date
   const byDateMap = {};
   filtered.forEach(e => {
     if (!byDateMap[e.date]) byDateMap[e.date] = [];
@@ -1645,7 +1429,7 @@ function doPrint(filtered) {
       html += '<div style="display:flex;align-items:flex-start;gap:10px;padding:6px 8px;margin-bottom:4px;background:#f9f9f7;border-radius:5px;border-left:3px solid '+color+'">'
         +'<div style="flex:1">'
         +'<div style="font-size:13px;font-weight:600;color:#1a1a18">'+e.title+'</div>'
-        +'<div style="font-size:11px;color:#666;margin-top:2px">'+secLabel+' &nbsp;·&nbsp; '+classStr+'</div>'
+        +'<div style="font-size:11px;color:#666;margin-top:2px">'+secLabel+' &nbsp;·&nbsp; '+classStr+(e.subject?' &nbsp;·&nbsp; '+e.subject:'')+(e.atype?' &nbsp;·&nbsp; '+e.atype:'')+(e.criterios&&e.criterios.length?' &nbsp;·&nbsp; Crit. '+e.criterios.join(','):'')+'</div>'
         +'</div>'
         +'<span style="font-size:10px;padding:2px 8px;border-radius:999px;background:'+color+';color:#fff;white-space:nowrap;flex-shrink:0">'+typeLabel+'</span>'
         +'</div>';
@@ -1657,7 +1441,6 @@ function doPrint(filtered) {
   html += '<div style="margin-top:24px;font-size:10px;color:#aaa;text-align:center;border-top:0.5px solid #eee;padding-top:8px">Redland School Calendar &nbsp;·&nbsp; '+filtered.length+' events</div>';
   html += '</div>';
 
-  // Open in new window for printing
   const win = window.open('','_blank','width=800,height=700');
   win.document.write('<!DOCTYPE html><html><head><title>School Calendar</title>'
     +'<style>body{margin:0;padding:0} @media print{.no-print{display:none}} '
