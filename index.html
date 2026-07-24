@@ -1456,54 +1456,6 @@ function doPrint(filtered) {
   win.document.close();
 }
 
-  const dates = Object.keys(byDateMap).sort();
-
-  let html = '<div style="font-family:Arial,sans-serif;max-width:750px;margin:0 auto;padding:20px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:2px solid #1a1a18;padding-bottom:12px">'
-    +'<h1 style="font-size:20px;font-weight:700;margin:0">School Calendar</h1>'
-    +'<span style="font-size:12px;color:#888">Printed: '+new Date().toLocaleDateString('es-CL')+'</span>'
-    +'</div>';
-
-  dates.forEach(date => {
-    const d = new Date(date+'T12:00:00');
-    const dateLabel = d.toLocaleDateString('es-CL', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-    html += '<div class="print-event-row" style="margin-bottom:14px">'
-      +'<div style="font-size:12px;font-weight:600;color:#444;text-transform:capitalize;margin-bottom:5px;padding-bottom:3px;border-bottom:0.5px solid #ddd">'+dateLabel+'</div>';
-
-    byDateMap[date].forEach(e => {
-      const sk = evSectionKey(e);
-      const secLabel = sk==='Cross'?'All sections':(sk==='Sports'?'Sports':(sk==='Salida'?'Salida':sk));
-      const typeLabel = typeLabels[e.type] || e.type;
-      const color = e.type==='test' ? (sk==='Senior'?'#5C1A2E':'#1a1a18') : (typeColors[e.type]||'#444');
-      const classStr = e.classes&&e.classes.length ? e.classes.join(', ') : 'All sections';
-      html += '<div style="display:flex;align-items:flex-start;gap:10px;padding:6px 8px;margin-bottom:4px;background:#f9f9f7;border-radius:5px;border-left:3px solid '+color+'">'
-        +'<div style="flex:1">'
-        +'<div style="font-size:13px;font-weight:600;color:#1a1a18">'+e.title+'</div>'
-        +'<div style="font-size:11px;color:#666;margin-top:2px">'+secLabel+' &nbsp;·&nbsp; '+classStr+(e.subject?' &nbsp;·&nbsp; '+e.subject:'')+(e.atype?' &nbsp;·&nbsp; '+e.atype:'')+(e.criterios&&e.criterios.length?' &nbsp;·&nbsp; Crit. '+e.criterios.join(','):'')+'</div>'
-        +'</div>'
-        +'<span style="font-size:10px;padding:2px 8px;border-radius:999px;background:'+color+';color:#fff;white-space:nowrap;flex-shrink:0">'+typeLabel+'</span>'
-        +'</div>';
-    });
-
-    html += '</div>';
-  });
-
-  html += '<div style="margin-top:24px;font-size:10px;color:#aaa;text-align:center;border-top:0.5px solid #eee;padding-top:8px">Redland School Calendar &nbsp;·&nbsp; '+filtered.length+' events</div>';
-  html += '</div>';
-
-  const win = window.open('','_blank','width=800,height=700');
-  win.document.write('<!DOCTYPE html><html><head><title>School Calendar</title>'
-    +'<style>body{margin:0;padding:0} @media print{.no-print{display:none}} '
-    +'@page{margin:15mm}</style></head><body>'
-    +'<div class="no-print" style="background:#f0f0ee;padding:12px 20px;display:flex;gap:10px;align-items:center">'
-    +'<button onclick="window.print()" style="background:#1a1a18;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer">&#128438; Print / Save as PDF</button>'
-    +'<span style="font-size:12px;color:#666">To save as PDF: choose <strong>Save as PDF</strong> as the printer</span>'
-    +'<button onclick="window.close()" style="margin-left:auto;background:none;border:0.5px solid #ccc;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer">Close</button>'
-    +'</div>'
-    +html+'</body></html>');
-  win.document.close();
-}
-
 document.getElementById('pw-input').focus();
 </script>
 </body>
