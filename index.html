@@ -1283,7 +1283,7 @@ function openPrintModal() {
   backdrop.id = 'print-modal-backdrop';
 
   const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'All sections',feriado:'Feriado',sports:'Sports'};
-  const types    = ['activity','test','salida','feriado','sports'];
+  const types    = ['activity','test','salida','cross','feriado','sports'];
   const typeChecks = types.map(t =>
     '<label class="print-check"><input type="checkbox" class="ptc" value="'+t+'" checked> '+typeLabels[t]+'</label>'
   ).join('');
@@ -1352,9 +1352,7 @@ function openPrintModal() {
 
     return events.filter(ev => {
       if (ev.date < from || ev.date > to) return false;
-      const sk = evSectionKey(ev);
-      const typeKey = sk==='Cross'?'cross':ev.type;
-      if (typeKey!=='cross' && !selTypes.includes(typeKey)) return false;
+      if (!selTypes.includes(ev.type)) return false;
 
       if (selClasses.length && ev.classes && ev.classes.length>0) {
         const matchesClass = ev.classes.some(c=>selClasses.includes(c));
