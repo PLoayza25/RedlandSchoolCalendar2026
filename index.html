@@ -1385,13 +1385,14 @@ function openPrintModal() {
   document.getElementById('print-cancel').onclick = ()=>backdrop.remove();
   document.getElementById('print-go').onclick = ()=>{
     const filtered = getFiltered();
-    if (filtered.length===0) { alert('No events match your filters.'); return; }
+    const fromDate = document.getElementById('pf-from').value;
+    const toDate = document.getElementById('pf-to').value;
     backdrop.remove();
-    doPrint(filtered);
+    doPrint(filtered, fromDate, toDate);
   };
 }
 
-function doPrint(filtered) {
+function doPrint(filtered, fromDate, toDate) {
   const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'All sections',feriado:'Feriado',sports:'Sports'};
   const CREST_URL = 'https://raw.githubusercontent.com/PLoayza25/RedlandSchoolCalendar2026/main/insignia%20excelente%20transparente%20200.jpg';
 
@@ -1401,7 +1402,30 @@ function doPrint(filtered) {
     byDateMap[e.date].push(e);
   });
 
-  const dates = Object.keys(byDateMap).sort();
+  function mondayOf(d) {
+    const day = d.getDay() || 7;
+    const m = new Date(d);
+    m.setDate(d.getDate() - (day - 1));
+    return m;
+  }
+  const startMonday = mondayOf(parseLocalDate(fromDate));
+  const endDateObj = parseLocalDate(toDate);
+
+  const weeks = [];
+  let wStart = new Date(startMonday);
+  while (wStart <= endDateObj) {
+    const wEnd = new Date(wStart);
+    wEnd.setDate(wStart.getDate() + 4);
+    weeks.push({ start: new Date(wStart), end: wEnd });
+    wStart.setDate(wStart.getDate() + 7);
+  }
+
+  function isFeriado(dateStr) {
+    return events.some(e => e.type === 'feriado' && e.date === dateStr);
+  }
+
+  const weekLabelFmt = d => d.toLocaleDateString('es-CL', {day:'numeric', month:'long'});
+  const weekYearFmt = d => d.toLocaleDateString('es-CL', {year:'numeric'});
 
   let html = '<div style="font-family:Arial,sans-serif;max-width:750px;margin:0 auto;padding:20px">'
     +'<div style="display:flex;align-items:center;gap:16px;margin-bottom:14px;border-bottom:3px solid #a32d2d;padding-bottom:14px">'
@@ -1418,29 +1442,56 @@ function doPrint(filtered) {
     +'<span style="box-sizing:border-box;font-size:9px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.03em;width:56px;text-align:center;line-height:1.3">Task<br>Type</span>'
     +'</div>';
 
-  dates.forEach(date => {
-    const d = new Date(date+'T12:00:00');
-    const dateLabel = d.toLocaleDateString('es-CL', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-    html += '<div class="print-event-row" style="margin-bottom:14px">'
-      +'<div style="font-size:12px;font-weight:700;color:#a32d2d;text-transform:capitalize;margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid #1a1a18">'+dateLabel+'</div>';
+  weeks.forEach(week => {
+    const weekDates = [];
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(week.start);
+      d.setDate(week.start.getDate() + i);
+      weekDates.push(fmt(d));
+    }
 
-    byDateMap[date].forEach(e => {
-      const sk = evSectionKey(e);
-      const secLabel = sk==='Cross'?'All sections':(sk==='Sports'?'Sports':(sk==='Salida'?'Salida':sk));
-      const taskTypeLabel = e.atype ? e.atype : (typeLabels[e.type] || e.type);
-      const classStr = e.classes&&e.classes.length ? e.classes.join(', ') : 'All sections';
-      const critBadges = (e.criterios&&e.criterios.length)
-        ? e.criterios.map(c=>'<span style="display:inline-block;background:#1a1a18;color:#fff;font-size:9px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;margin:0 1px">'+c+'</span>').join('')
-        : '<span style="font-size:10px;color:#ccc">—</span>';
-      html += '<div style="box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:6px 8px;margin-bottom:4px;background:#f9f9f7;border-radius:5px;border-left:3px solid #a32d2d">'
-        +'<div style="flex:1;min-width:0">'
-        +'<div style="font-size:13px;font-weight:600;color:#1a1a18">'+e.title+'</div>'
-        +'<div style="font-size:11px;color:#666;margin-top:2px">'+secLabel+' &nbsp;·&nbsp; '+classStr+(e.subject?' &nbsp;·&nbsp; '+e.subject:'')+'</div>'
-        +'</div>'
-        +'<div style="box-sizing:border-box;flex-shrink:0;width:40px;display:flex;justify-content:center;align-items:center">'+critBadges+'</div>'
-        +'<span style="box-sizing:border-box;font-size:10px;padding:4px 6px;border-radius:8px;background:#1a1a18;color:#fff;white-space:normal;flex-shrink:0;width:56px;text-align:center;line-height:1.25">'+taskTypeLabel+'</span>'
-        +'</div>';
-    });
+    const allFeriado = weekDates.every(ds => isFeriado(ds));
+    const weekAssessments = weekDates.filter(ds => byDateMap[ds] && byDateMap[ds].length > 0);
+
+    if (!allFeriado && weekAssessments.length === 0) return;
+
+    html += '<div style="margin-bottom:20px;break-inside:avoid">'
+      +'<div style="font-size:13px;font-weight:700;color:#1a1a18;background:#f0f0ee;padding:6px 10px;border-radius:5px;margin-bottom:8px">'
+      +'Week of '+weekLabelFmt(week.start)+' \u2013 '+weekLabelFmt(week.end)+', '+weekYearFmt(week.start)
+      +'</div>';
+
+    if (allFeriado) {
+      html += '<div style="text-align:center;padding:14px;color:#1A6B35;background:#EAF3DE;border-radius:6px;font-size:12px;font-weight:600">School holidays</div>';
+    } else {
+      weekDates.forEach(ds => {
+        const dayEvents = byDateMap[ds];
+        if (!dayEvents || dayEvents.length === 0) return;
+        const d = new Date(ds+'T12:00:00');
+        const dateLabel = d.toLocaleDateString('es-CL', {weekday:'long', day:'numeric', month:'long'});
+        html += '<div class="print-event-row" style="margin-bottom:10px">'
+          +'<div style="font-size:11px;font-weight:700;color:#a32d2d;text-transform:capitalize;margin-bottom:4px">'+dateLabel+'</div>';
+
+        dayEvents.forEach(e => {
+          const sk = evSectionKey(e);
+          const secLabel = sk==='Cross'?'All sections':(sk==='Sports'?'Sports':(sk==='Salida'?'Salida':sk));
+          const taskTypeLabel = e.atype ? e.atype : (typeLabels[e.type] || e.type);
+          const classStr = e.classes&&e.classes.length ? e.classes.join(', ') : 'All sections';
+          const critBadges = (e.criterios&&e.criterios.length)
+            ? e.criterios.map(c=>'<span style="display:inline-block;background:#1a1a18;color:#fff;font-size:9px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;margin:0 1px">'+c+'</span>').join('')
+            : '<span style="font-size:10px;color:#ccc">—</span>';
+          html += '<div style="box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:6px 8px;margin-bottom:4px;background:#f9f9f7;border-radius:5px;border-left:3px solid #a32d2d">'
+            +'<div style="flex:1;min-width:0">'
+            +'<div style="font-size:13px;font-weight:600;color:#1a1a18">'+e.title+'</div>'
+            +'<div style="font-size:11px;color:#666;margin-top:2px">'+secLabel+' &nbsp;·&nbsp; '+classStr+(e.subject?' &nbsp;·&nbsp; '+e.subject:'')+'</div>'
+            +'</div>'
+            +'<div style="box-sizing:border-box;flex-shrink:0;width:40px;display:flex;justify-content:center;align-items:center">'+critBadges+'</div>'
+            +'<span style="box-sizing:border-box;font-size:10px;padding:4px 6px;border-radius:8px;background:#1a1a18;color:#fff;white-space:normal;flex-shrink:0;width:56px;text-align:center;line-height:1.25">'+taskTypeLabel+'</span>'
+            +'</div>';
+        });
+
+        html += '</div>';
+      });
+    }
 
     html += '</div>';
   });
@@ -1460,6 +1511,7 @@ function doPrint(filtered) {
     +html+'</body></html>');
   win.document.close();
 }
+
 document.getElementById('pw-input').focus();
 </script>
 </body>
