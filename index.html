@@ -1412,10 +1412,10 @@ function doPrint(filtered) {
     +'</div>'
     +'<span style="font-size:12px;color:#888">Printed: '+new Date().toLocaleDateString('es-CL')+'</span>'
     +'</div>'
-    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:0 8px">'
+    +'<div style="box-sizing:border-box;display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:0 8px;border-left:3px solid transparent">'
     +'<div style="flex:1"></div>'
-    +'<span style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.03em;width:40px;text-align:center">Criteria</span>'
-    +'<span style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.03em;width:56px;text-align:center;line-height:1.3">Task<br>Type</span>'
+    +'<span style="box-sizing:border-box;font-size:9px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.03em;width:40px;text-align:center">Criteria</span>'
+    +'<span style="box-sizing:border-box;font-size:9px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.03em;width:56px;text-align:center;line-height:1.3">Task<br>Type</span>'
     +'</div>';
 
   dates.forEach(date => {
@@ -1432,13 +1432,13 @@ function doPrint(filtered) {
       const critBadges = (e.criterios&&e.criterios.length)
         ? e.criterios.map(c=>'<span style="display:inline-block;background:#1a1a18;color:#fff;font-size:9px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;margin:0 1px">'+c+'</span>').join('')
         : '<span style="font-size:10px;color:#ccc">—</span>';
-      html += '<div style="display:flex;align-items:center;gap:10px;padding:6px 8px;margin-bottom:4px;background:#f9f9f7;border-radius:5px;border-left:3px solid #a32d2d">'
+      html += '<div style="box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:6px 8px;margin-bottom:4px;background:#f9f9f7;border-radius:5px;border-left:3px solid #a32d2d">'
         +'<div style="flex:1;min-width:0">'
         +'<div style="font-size:13px;font-weight:600;color:#1a1a18">'+e.title+'</div>'
         +'<div style="font-size:11px;color:#666;margin-top:2px">'+secLabel+' &nbsp;·&nbsp; '+classStr+(e.subject?' &nbsp;·&nbsp; '+e.subject:'')+'</div>'
         +'</div>'
-        +'<div style="flex-shrink:0;width:40px;display:flex;justify-content:center;align-items:center">'+critBadges+'</div>'
-        +'<span style="font-size:10px;padding:4px 6px;border-radius:8px;background:#1a1a18;color:#fff;white-space:normal;flex-shrink:0;width:56px;text-align:center;line-height:1.25">'+taskTypeLabel+'</span>'
+        +'<div style="box-sizing:border-box;flex-shrink:0;width:40px;display:flex;justify-content:center;align-items:center">'+critBadges+'</div>'
+        +'<span style="box-sizing:border-box;font-size:10px;padding:4px 6px;border-radius:8px;background:#1a1a18;color:#fff;white-space:normal;flex-shrink:0;width:56px;text-align:center;line-height:1.25">'+taskTypeLabel+'</span>'
         +'</div>';
     });
 
