@@ -1404,13 +1404,17 @@ function doPrint(filtered) {
   const dates = Object.keys(byDateMap).sort();
 
   let html = '<div style="font-family:Arial,sans-serif;max-width:750px;margin:0 auto;padding:20px">'
-    +'<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;border-bottom:3px solid #a32d2d;padding-bottom:14px">'
+    +'<div style="display:flex;align-items:center;gap:16px;margin-bottom:14px;border-bottom:3px solid #a32d2d;padding-bottom:14px">'
     +'<img src="'+CREST_URL+'" style="width:56px;height:56px;object-fit:contain" alt="Redland School crest">'
     +'<div style="flex:1">'
     +'<h1 style="font-size:20px;font-weight:700;margin:0;color:#1a1a18">Redland School</h1>'
     +'<div style="font-size:13px;color:#a32d2d;font-weight:600;margin-top:2px">School Calendar</div>'
     +'</div>'
     +'<span style="font-size:12px;color:#888">Printed: '+new Date().toLocaleDateString('es-CL')+'</span>'
+    +'</div>'
+    +'<div style="display:flex;justify-content:flex-end;gap:10px;align-items:center;margin-bottom:16px;padding-right:2px">'
+    +'<span style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.03em;width:52px;text-align:center">Criteria</span>'
+    +'<span style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.03em;min-width:70px;text-align:center">Task Type</span>'
     +'</div>';
 
   dates.forEach(date => {
@@ -1422,7 +1426,7 @@ function doPrint(filtered) {
     byDateMap[date].forEach(e => {
       const sk = evSectionKey(e);
       const secLabel = sk==='Cross'?'All sections':(sk==='Sports'?'Sports':(sk==='Salida'?'Salida':sk));
-      const typeLabel = typeLabels[e.type] || e.type;
+      const taskTypeLabel = e.atype ? e.atype : (typeLabels[e.type] || e.type);
       const classStr = e.classes&&e.classes.length ? e.classes.join(', ') : 'All sections';
       const critBadges = (e.criterios&&e.criterios.length)
         ? e.criterios.map(c=>'<span style="display:inline-block;background:#1a1a18;color:#fff;font-size:9px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;margin-right:2px">'+c+'</span>').join('')
@@ -1430,10 +1434,10 @@ function doPrint(filtered) {
       html += '<div style="display:flex;align-items:flex-start;gap:10px;padding:6px 8px;margin-bottom:4px;background:#f9f9f7;border-radius:5px;border-left:3px solid #a32d2d">'
         +'<div style="flex:1">'
         +'<div style="font-size:13px;font-weight:600;color:#1a1a18">'+e.title+'</div>'
-        +'<div style="font-size:11px;color:#666;margin-top:2px">'+secLabel+' &nbsp;·&nbsp; '+classStr+(e.subject?' &nbsp;·&nbsp; '+e.subject:'')+(e.atype?' &nbsp;·&nbsp; '+e.atype:'')+'</div>'
+        +'<div style="font-size:11px;color:#666;margin-top:2px">'+secLabel+' &nbsp;·&nbsp; '+classStr+(e.subject?' &nbsp;·&nbsp; '+e.subject:'')+'</div>'
         +'</div>'
-        +(critBadges?'<div style="flex-shrink:0;display:flex;align-items:center">'+critBadges+'</div>':'')
-        +'<span style="font-size:10px;padding:2px 8px;border-radius:999px;background:#1a1a18;color:#fff;white-space:nowrap;flex-shrink:0">'+typeLabel+'</span>'
+        +'<div style="flex-shrink:0;display:flex;align-items:center;width:52px;justify-content:center">'+(critBadges||'<span style="font-size:10px;color:#ccc">—</span>')+'</div>'
+        +'<span style="font-size:10px;padding:2px 8px;border-radius:999px;background:#1a1a18;color:#fff;white-space:nowrap;flex-shrink:0;min-width:70px;text-align:center">'+taskTypeLabel+'</span>'
         +'</div>';
     });
 
@@ -1455,7 +1459,6 @@ function doPrint(filtered) {
     +html+'</body></html>');
   win.document.close();
 }
-
 document.getElementById('pw-input').focus();
 </script>
 </body>
