@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://script.google.com https://script.googleusercontent.com; connect-src *; img-src *;">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catch-up Test Planner — Redland School</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f5f5f3;--bg3:#efefec;--bg-info:#e6f1fb;
+  --text:#1a1a18;--text2:#5f5e5a;--text3:#888780;
+  --border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.22);
+  --r:8px;--rl:12px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --red:#a32d2d;--black:#1a1a18;
+}
+body{font-family:var(--font);background:var(--bg3);color:var(--text);min-height:100vh;padding:20px 16px}
+
+#login-screen{max-width:360px;margin:80px auto 0;background:var(--bg);border-radius:var(--rl);border:0.5px solid var(--border);padding:2rem;border-top:4px solid var(--red)}
+#login-screen h1{font-size:17px;font-weight:500;margin-bottom:4px;color:var(--red)}
+#login-screen .sub{font-size:12px;color:var(--text2);margin-bottom:1.5rem}
+.lfield{margin-bottom:12px}
+.lfield label{font-size:11px;color:var(--text2);display:block;margin-bottom:4px}
+.lfield input{width:100%;font-size:13px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none;font-family:var(--font)}
+.login-btn{width:100%;background:var(--red);color:#fff;border:none;border-radius:var(--r);padding:9px;font-size:13px;cursor:pointer;font-family:var(--font);margin-top:4px}
+.lerr{font-size:12px;color:var(--red);margin-top:8px;min-height:16px}
+
+#app{max-width:1000px;margin:0 auto;display:none}
+.app-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:2px solid var(--red);flex-wrap:wrap;gap:8px}
+.app-title{font-size:17px;font-weight:500;color:var(--black)}
+.hdr-right{display:flex;gap:8px;align-items:center}
+.ibtn{background:none;border:0.5px solid var(--border);border-radius:var(--r);padding:6px 12px;font-size:12px;cursor:pointer;color:var(--text2);font-family:var(--font)}
+.ibtn:hover{background:var(--bg2)}
+.pbtn{background:var(--red);color:#fff;border:none;border-radius:var(--r);padding:7px 16px;font-size:13px;cursor:pointer;font-family:var(--font);font-weight:500}
+.pbtn:hover{opacity:.9}
+
+.tabs{display:flex;border:0.5px solid var(--border2);border-radius:var(--r);overflow:hidden;margin-bottom:1.25rem;width:fit-content}
+.tab{background:none;border:none;padding:8px 16px;font-size:12px;cursor:pointer;color:var(--text2);font-family:var(--font)}
+.tab.active{background:var(--red);color:#fff;font-weight:500}
+.tabpage{display:none}
+.tabpage.active{display:block}
+
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:1.25rem;margin-bottom:1.25rem}
+.card h3{font-size:14px;font-weight:600;color:var(--black);margin-bottom:12px}
+.frow{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:10px}
+.fb label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px}
+.fb input,.fb select{width:100%;font-size:13px;padding:7px 9px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none;font-family:var(--font)}
+.rm-btn{background:#fcebeb;color:var(--red);border:0.5px solid #f09595;border-radius:var(--r);padding:7px 10px;font-size:12px;cursor:pointer;font-family:var(--font)}
+.add-student-btn{background:none;border:1px dashed var(--border2);border-radius:var(--r);padding:8px 14px;font-size:12px;cursor:pointer;color:var(--text2);font-family:var(--font);width:100%}
+
+.student-panel{border:0.5px solid var(--border);border-radius:var(--rl);padding:1rem;margin-bottom:1rem;background:var(--bg2)}
+.student-panel h4{font-size:13px;color:var(--red);margin-bottom:10px}
+.mini-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px;background:var(--bg)}
+.mini-table th{background:var(--bg2);padding:5px 8px;text-align:left;font-size:10px;color:var(--text2);border-bottom:0.5px solid var(--border)}
+.mini-table td{padding:5px 8px;border-bottom:0.5px solid var(--border)}
+.refnum{display:inline-block;background:var(--black);color:#fff;font-size:10px;font-weight:700;width:18px;height:18px;line-height:18px;text-align:center;border-radius:3px}
+
+.load-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:12px}
+.load-table th,.load-table td{padding:4px 6px;text-align:center;border:0.5px solid var(--border)}
+.load-table th{background:var(--bg2);font-size:10px}
+.load-table td.wk{text-align:left;font-weight:500}
+
+.slot-row{display:grid;grid-template-columns:110px 60px 1fr;gap:8px;align-items:center;margin-bottom:6px;font-size:12px}
+.slot-row input{width:100%;font-size:12px;padding:5px 7px;border:0.5px solid var(--border2);border-radius:var(--r);text-align:center}
+.slot-fill{font-size:11px;color:var(--text2)}
+.slot-fill.has{color:var(--black);font-weight:500}
+
+.reason-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--black);color:#fff;font-size:12px;padding:8px 18px;border-radius:var(--r);z-index:400;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+
+.confirm-list{font-size:12px}
+.confirm-item{padding:8px;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <h1>Catch-up Test Planner</h1>
+  <p class="sub">Redland School · Coordinators only</p>
+  <div class="lfield"><label>Password</label><input type="password" id="lp" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+  <button class="login-btn" onclick="doLogin()">Continue</button>
+  <div class="lerr" id="lerr"></div>
+</div>
+
+<div id="app">
+  <div class="app-hdr">
+    <span class="app-title">Catch-up Test Planner</span>
+    <div class="hdr-right">
+      <button class="ibtn" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-new" onclick="setTab('new')">+ New schedule</button>
+    <button class="tab" id="tab-report" onclick="setTab('report')">Report / Print</button>
+  </div>
+
+  <div class="tabpage active" id="page-new">
+    <div class="card">
+      <h3>Students</h3>
+      <div id="student-inputs"></div>
+      <button class="add-student-btn" onclick="addStudentRow()">+ Add student</button>
+      <div style="margin-top:14px">
+        <button class="pbtn" onclick="buildSchedules()">Build catch-up schedules</button>
+      </div>
+    </div>
+
+    <div id="results-area"></div>
+
+    <div id="submit-area" style="display:none">
+      <button class="pbtn" onclick="submitAll()">Submit all catch-up schedules</button>
+    </div>
+
+    <div id="confirm-area"></div>
+  </div>
+
+  <div class="tabpage" id="page-report">
+    <div class="card">
+      <h3>Catch-up report</h3>
+      <div class="frow" style="grid-template-columns:1fr 1fr 1fr auto">
+        <div class="fb"><label>From date</label><input type="date" id="rep-from"></div>
+        <div class="fb"><label>To date</label><input type="date" id="rep-to"></div>
+        <div class="fb"><label>Level</label>
+          <select id="rep-level">
+            <option value="all">All</option>
+            <option value="middle">Middle</option>
+            <option value="senior">Senior</option>
+          </select>
+        </div>
+        <div class="fb"><button class="pbtn" onclick="loadReport()">Load</button></div>
+      </div>
+      <div id="report-preview" style="font-size:12px;color:var(--text2);margin:10px 0"></div>
+      <button class="ibtn" onclick="printReport()">&#128438; Print / PDF</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CATCHUP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwpCMzMrZ5S-EmbPU2PWUXNa5E1E_9XtGcOrPkzYig0kklnn6eI8hA0LOIMNNOs5IUJvQ/exec';
+const ITEMS_JSON_URL  = 'https://raw.githubusercontent.com/PLoayza25/CalendarioEvaluacionesMiddle/main/items.json';
+const EVENTS_JSON_URL = 'https://raw.githubusercontent.com/PLoayza25/RedlandSchoolCalendar2026/main/events.json';
+const CREST_URL = 'https://raw.githubusercontent.com/PLoayza25/RedlandSchoolCalendar2026/main/insignia%20excelente%20transparente%20200.jpg';
+
+let sessionToken = null;
+let itemsData = [];
+let eventsData = [];
+let _cbN = 0;
+let studentRowCount = 0;
+let builtStudents = []; // { name, cls, from, to, missed:[], slots:[{date,dayName},...] , refAssign:{}, reason, reasonOther }
+let lastReportRows = [];
+
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800); }
+
+function apiCall(payload, useToken){
+  if(useToken!==false) payload.token = sessionToken;
+  return new Promise((resolve,reject)=>{
+    const cb='_cu'+(++_cbN);
+    const timer=setTimeout(()=>{delete window[cb];reject(new Error('Timeout'));},30000);
+    window[cb]=function(data){clearTimeout(timer);delete window[cb];const s=document.getElementById('js_'+cb);if(s)s.remove();resolve(data);};
+    const url=CATCHUP_SCRIPT_URL+'?callback='+cb+'&payload='+encodeURIComponent(JSON.stringify(payload));
+    const s=document.createElement('script');s.id='js_'+cb;s.src=url;
+    s.onerror=()=>{clearTimeout(timer);delete window[cb];s.remove();reject(new Error('Network error'));};
+    document.head.appendChild(s);
+  });
+}
+
+function doLogin(){
+  const pw=document.getElementById('lp').value;
+  if(!pw)return;
+  document.getElementById('lerr').textContent='';
+  apiCall({action:'checkAuth',token:pw},false).then(d=>{
+    if(d.ok){ sessionToken=pw; startSession(); }
+    else document.getElementById('lerr').textContent='Incorrect password.';
+  }).catch(()=>{ document.getElementById('lerr').textContent='Connection error.'; });
+}
+
+function doLogout(){
+  sessionToken=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='block';
+  document.getElementById('lp').value='';
+}
+
+function startSession(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  Promise.all([
+    fetch(ITEMS_JSON_URL+'?t='+Date.now()).then(r=>r.json()).catch(()=>({items:[]})),
+    fetch(EVENTS_JSON_URL+'?t='+Date.now()).then(r=>r.json()).catch(()=>({events:[]}))
+  ]).then(([items,ev])=>{
+    itemsData = items.items || [];
+    eventsData = (ev.events || []);
+    showToast('Data loaded.');
+  });
+  addStudentRow();
+}
+
+function setTab(t){
+  document.getElementById('tab-new').classList.toggle('active',t==='new');
+  document.getElementById('tab-report').classList.toggle('active',t==='report');
+  document.getElementById('page-new').classList.toggle('active',t==='new');
+  document.getElementById('page-report').classList.toggle('active',t==='report');
+}
+
+function addStudentRow(){
+  studentRowCount++;
+  const id='sr'+studentRowCount;
+  const div=document.createElement('div');
+  div.className='frow';
+  div.id=id;
+  div.innerHTML=
+    '<div class="fb"><label>Student name</label><input type="text" class="sr-name" placeholder="e.g. Franco Jamarme"></div>'
+    +'<div class="fb"><label>Class</label><input type="text" class="sr-class" placeholder="e.g. 8B"></div>'
+    +'<div class="fb"><label>Absent from</label><input type="date" class="sr-from"></div>'
+    +'<div class="fb"><label>Absent to</label><input type="date" class="sr-to"></div>'
+    +'<button class="rm-btn" onclick="document.getElementById(\''+id+'\').remove()">Remove</button>';
+  document.getElementById('student-inputs').appendChild(div);
+}
+
+function gradeOf(cls){
+  const m = (cls||'').match(/^(IV|III|II|I|\d+)/);
+  return m ? m[1] : cls;
+}
+
+function matchesCurso(itemCurso, enteredClass){
+  if(itemCurso===enteredClass) return true;
+  const m = enteredClass.match(/^\d+/);
+  if(m && itemCurso===m[0]+'AB') return true;
+  return false;
+}
+
+function fmtDate(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function parseLocal(s){
+  const [y,m,d]=s.split('-').map(Number);
+  return new Date(y,m-1,d);
+}
+const DAY_NAMES=['Mon','Tue','Wed','Thu','Fri'];
+
+function mondayOfWeekContaining(d){
+  const day=d.getDay()||7;
+  const m=new Date(d);
+  m.setDate(d.getDate()-(day-1));
+  return m;
+}
+
+function buildSchedules(){
+  const rows=[...document.querySelectorAll('#student-inputs .frow')];
+  const students=[];
+  rows.forEach(row=>{
+    const name=row.querySelector('.sr-name').value.trim();
+    const cls=row.querySelector('.sr-class').value.trim();
+    const from=row.querySelector('.sr-from').value;
+    const to=row.querySelector('.sr-to').value;
+    if(name && cls && from && to) students.push({name,cls,from,to});
+  });
+  if(!students.length){ showToast('Enter at least one student with all fields filled.'); return; }
+
+  const today=new Date();
+  const startMonday=mondayOfWeekContaining(today);
+  const NUM_WEEKS=3;
+
+  builtStudents = students.map(st=>{
+    // Missed assessments
+    const missed = itemsData.filter(it=>
+      matchesCurso(it.curso, st.cls) &&
+      it.date >= st.from && it.date <= st.to &&
+      it.status !== 'rejected'
+    ).sort((a,b)=>a.date.localeCompare(b.date));
+
+    const grade = gradeOf(st.cls);
+
+    // Weekly load table (grade-wide, next NUM_WEEKS weeks starting this week's Monday)
+    const weeks=[];
+    for(let w=0; w<NUM_WEEKS; w++){
+      const wStart=new Date(startMonday); wStart.setDate(startMonday.getDate()+w*7);
+      const counts=[0,0,0,0,0];
+      for(let d=0; d<5; d++){
+        const dd=new Date(wStart); dd.setDate(wStart.getDate()+d);
+        const ds=fmtDate(dd);
+        counts[d]=eventsData.filter(e=>e.type==='test' && e.date===ds && (e.classes||[]).some(c=>gradeOf(c)===grade)).length;
+      }
+      weeks.push({start:new Date(wStart), counts});
+    }
+
+    // Wed/Fri slots for next NUM_WEEKS weeks
+    const slots=[];
+    for(let w=0; w<NUM_WEEKS; w++){
+      const wStart=new Date(startMonday); wStart.setDate(startMonday.getDate()+w*7);
+      [2,4].forEach(offset=>{ // Wed=2, Fri=4 (Mon=0)
+        const dd=new Date(wStart); dd.setDate(wStart.getDate()+offset);
+        slots.push({date:fmtDate(dd), dayName: offset===2?'Wed':'Fri'});
+      });
+    }
+
+    return { ...st, grade, missed, weeks, slots, refAssign:{}, reason:'Sick leave', reasonOther:'' };
+  });
+
+  renderResults();
+  document.getElementById('submit-area').style.display='block';
+}
+
+function renderResults(){
+  const area=document.getElementById('results-area');
+  area.innerHTML='';
+  builtStudents.forEach((st,si)=>{
+    const panel=document.createElement('div');
+    panel.className='student-panel';
+
+    let missedRows='';
+    st.missed.forEach((m,i)=>{
+      missedRows += '<tr><td><span class="refnum">'+(i+1)+'</span></td><td>'+m.date+'</td><td>'+m.subject+'</td><td>'+(m.tema||'—')+'</td><td>'+m.type+'</td><td>'+(m.criterios||[]).join(', ')+'</td></tr>';
+    });
+
+    let loadRows='';
+    st.weeks.forEach(w=>{
+      loadRows += '<tr><td class="wk">Week of '+w.start.toLocaleDateString('es-CL',{day:'numeric',month:'short'})+'</td>'
+        +w.counts.map((c,i)=>'<td>'+DAY_NAMES[i]+' '+c+'</td>').join('')+'</tr>';
+    });
+
+    let slotRows='';
+    st.slots.forEach((slot,i)=>{
+      slotRows += '<div class="slot-row">'
+        +'<span>'+slot.dayName+' '+new Date(slot.date+'T12:00:00').toLocaleDateString('es-CL',{day:'numeric',month:'short'})+'</span>'
+        +'<input type="number" min="1" placeholder="#" data-si="'+si+'" data-slot="'+i+'" onchange="assignSlot(this)">'
+        +'<span class="slot-fill" id="fill-'+si+'-'+i+'">—</span>'
+        +'</div>';
+    });
+
+    panel.innerHTML =
+      '<h4>'+st.name+' · '+st.cls+' · Absent '+st.from+' to '+st.to+'</h4>'
+      + (st.missed.length ? '<table class="mini-table"><thead><tr><th>#</th><th>Date</th><th>Subject</th><th>Tema</th><th>Type</th><th>Criteria</th></tr></thead><tbody>'+missedRows+'</tbody></table>'
+        : '<p style="font-size:12px;color:var(--text2);margin-bottom:10px">No assessments found for this class in that date range.</p>')
+      + '<table class="load-table"><tbody>'+loadRows+'</tbody></table>'
+      + '<div style="font-size:11px;color:var(--text2);margin-bottom:6px">Assign a reference number (from the missed list above) to a catch-up slot:</div>'
+      + slotRows
+      + '<div class="reason-row">'
+      + '<div class="fb"><label>Reason</label><select id="reason-'+si+'" onchange="onReasonChange('+si+')">'
+      + '<option>Sick leave</option><option>Authorized absence</option><option>Unauthorized absence</option><option value="Other">Other</option>'
+      + '</select></div>'
+      + '<div class="fb" id="reason-other-wrap-'+si+'" style="display:none"><label>Specify reason</label><input type="text" id="reason-other-'+si+'" placeholder="Enter reason"></div>'
+      + '</div>';
+
+    area.appendChild(panel);
+  });
+}
+
+function onReasonChange(si){
+  const sel=document.getElementById('reason-'+si).value;
+  document.getElementById('reason-other-wrap-'+si).style.display = sel==='Other' ? 'block' : 'none';
+}
+
+function assignSlot(inputEl){
+  const si=Number(inputEl.dataset.si);
+  const slotIdx=Number(inputEl.dataset.slot);
+  const ref=parseInt(inputEl.value);
+  const st=builtStudents[si];
+  const fillEl=document.getElementById('fill-'+si+'-'+slotIdx);
+  if(!ref || ref<1 || ref>st.missed.length){
+    st.refAssign[slotIdx]=null;
+    fillEl.textContent='—'; fillEl.classList.remove('has');
+    return;
+  }
+  const m=st.missed[ref-1];
+  st.refAssign[slotIdx]={ref, item:m};
+  fillEl.textContent=m.subject+(m.tema?': '+m.tema:'');
+  fillEl.classList.add('has');
+}
+
+function submitAll(){
+  const entries=[];
+  builtStudents.forEach(st=>{
+    const reasonSel=document.getElementById('reason-'+builtStudents.indexOf(st)).value;
+    const reasonOther=document.getElementById('reason-other-'+builtStudents.indexOf(st)).value.trim();
+    st.slots.forEach((slot,i)=>{
+      const a=st.refAssign[i];
+      if(a){
+        entries.push({
+          studentName: st.name, class: st.cls, absentFrom: st.from, absentTo: st.to,
+          originalSubject: a.item.subject, originalTema: a.item.tema||'', originalType: a.item.type,
+          originalCriterios: a.item.criterios||[], originalDate: a.item.date,
+          newDate: slot.date, reason: reasonSel, reasonOther: reasonSel==='Other'?reasonOther:''
+        });
+      }
+    });
+  });
+  if(!entries.length){ showToast('Assign at least one catch-up slot before submitting.'); return; }
+
+  apiCall({action:'addCatchUps', entries, enteredBy:'coordinator'}).then(d=>{
+    if(d.ok){
+      showToast(entries.length+' catch-up date(s) saved.');
+      renderConfirmation(entries);
+    } else showToast('Error: '+d.error);
+  }).catch(()=>showToast('Connection error.'));
+}
+
+function renderConfirmation(entries){
+  const byStudent={};
+  entries.forEach(e=>{ if(!byStudent[e.studentName]) byStudent[e.studentName]=[]; byStudent[e.studentName].push(e); });
+
+  const area=document.getElementById('confirm-area');
+  let html='<div class="card"><h3>Confirmation</h3>';
+  Object.keys(byStudent).forEach(name=>{
+    html += '<div class="confirm-item"><span>'+name+' — '+byStudent[name].length+' catch-up date(s)</span>'
+      + '<button class="ibtn" onclick=\'printStudent("'+name.replace(/"/g,'&quot;')+'")\'>&#128438; Print</button></div>';
+  });
+  html += '</div>';
+  area.innerHTML = html;
+  window._confirmedByStudent = byStudent;
+}
+
+function printStudent(name){
+  const entries = (window._confirmedByStudent||{})[name] || [];
+  if(!entries.length) return;
+  const cls = entries[0].class;
+  let rows='';
+  entries.sort((a,b)=>a.newDate.localeCompare(b.newDate)).forEach(e=>{
+    const critStr = (e.originalCriterios||[]).join(', ')||'—';
+    rows += '<tr><td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+e.newDate+'</td>'
+      +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+e.originalSubject+'</td>'
+      +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(e.originalTema||'—')+'</td>'
+      +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+e.originalType+'</td>'
+      +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+critStr+'</td></tr>';
+  });
+  const html = brandedHeader('Catch-up Test Schedule')
+    + '<div style="margin-bottom:16px;font-size:13px">'
+    + '<div><strong>Student:</strong> '+name+'</div>'
+    + '<div><strong>Class:</strong> '+cls+'</div>'
+    + '</div>'
+    + '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+    + '<thead><tr style="background:#f5f5f3"><th style="padding:6px 8px;text-align:left">Date</th><th style="padding:6px 8px;text-align:left">Subject</th><th style="padding:6px 8px;text-align:left">Tema</th><th style="padding:6px 8px;text-align:left">Type</th><th style="padding:6px 8px;text-align:left">Criteria</th></tr></thead>'
+    + '<tbody>'+rows+'</tbody></table>'
+    + brandedFooter();
+  openPrintWindow(html);
+}
+
+function brandedHeader(subtitle){
+  return '<div style="font-family:Arial,sans-serif;max-width:750px;margin:0 auto;padding:20px">'
+    +'<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;border-bottom:3px solid #a32d2d;padding-bottom:14px">'
+    +'<img src="'+CREST_URL+'" style="width:56px;height:56px;object-fit:contain" alt="Redland School crest">'
+    +'<div style="flex:1">'
+    +'<h1 style="font-size:20px;font-weight:700;margin:0;color:#1a1a18">Redland School</h1>'
+    +'<div style="font-size:13px;color:#a32d2d;font-weight:600;margin-top:2px">'+subtitle+'</div>'
+    +'</div>'
+    +'<span style="font-size:12px;color:#888">Printed: '+new Date().toLocaleDateString('es-CL')+'</span>'
+    +'</div>';
+}
+function brandedFooter(){
+  return '<div style="margin-top:24px;font-size:10px;color:#a32d2d;text-align:center;border-top:2px solid #1a1a18;padding-top:8px;font-weight:600">Redland School</div></div>';
+}
+function openPrintWindow(html){
+  const win=window.open('','_blank','width=800,height=700');
+  win.document.write('<!DOCTYPE html><html><head><title>Redland School</title>'
+    +'<style>body{margin:0;padding:0} @media print{.no-print{display:none}} @page{margin:15mm}</style></head><body>'
+    +'<div class="no-print" style="background:#1a1a18;padding:12px 20px;display:flex;gap:10px;align-items:center">'
+    +'<button onclick="window.print()" style="background:#a32d2d;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600">&#128438; Print / Save as PDF</button>'
+    +'<button onclick="window.close()" style="margin-left:auto;background:none;border:1px solid #666;color:#ddd;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer">Close</button>'
+    +'</div>'+html+'</body></html>');
+  win.document.close();
+}
+
+// ── Report tab ──────────────────────────────────────────────────
+function loadReport(){
+  apiCall({action:'getCatchUps'}).then(d=>{
+    if(!d.ok){ showToast('Error: '+d.error); return; }
+    const from=document.getElementById('rep-from').value;
+    const to=document.getElementById('rep-to').value;
+    const level=document.getElementById('rep-level').value;
+
+    let rows = d.items.filter(it=>{
+      if(from && it.newDate < from) return false;
+      if(to && it.newDate > to) return false;
+      const grade = gradeOf(it.class);
+      const isMiddle = /^[5-8]$/.test(grade);
+      const isSenior = /^(I|II|III|IV)$/.test(grade);
+      if(level==='middle' && !isMiddle) return false;
+      if(level==='senior' && !isSenior) return false;
+      return true;
+    }).sort((a,b)=> a.class.localeCompare(b.class) || a.newDate.localeCompare(b.newDate));
+
+    lastReportRows = rows;
+    document.getElementById('report-preview').textContent = rows.length+' catch-up record(s) found.';
+  }).catch(()=>showToast('Connection error.'));
+}
+
+function printReport(){
+  if(!lastReportRows.length){ showToast('Load the report first.'); return; }
+  let rows='';
+  lastReportRows.forEach(r=>{
+    const critStr=(r.originalCriterios||[]).join(', ')||'—';
+    rows += '<tr><td style="padding:5px 8px;border-bottom:0.5px solid #eee">'+r.newDate+'</td>'
+      +'<td style="padding:5px 8px;border-bottom:0.5px solid #eee">'+r.studentName+'</td>'
+      +'<td style="padding:5px 8px;border-bottom:0.5px solid #eee">'+r.class+'</td>'
+      +'<td style="padding:5px 8px;border-bottom:0.5px solid #eee">'+r.originalSubject+'</td>'
+      +'<td style="padding:5px 8px;border-bottom:0.5px solid #eee">'+(r.originalTema||'—')+'</td>'
+      +'<td style="padding:5px 8px;border-bottom:0.5px solid #eee">'+r.originalType+'</td>'
+      +'<td style="padding:5px 8px;border-bottom:0.5px solid #eee">'+critStr+'</td>'
+      +'<td style="padding:5px 8px;border-bottom:0.5px solid #eee">'+(r.reason==='Other'?r.reasonOther:r.reason)+'</td></tr>';
+  });
+  const html = brandedHeader('Catch-up Tests Report')
+    + '<table style="width:100%;border-collapse:collapse;font-size:11px">'
+    + '<thead><tr style="background:#f5f5f3">'
+    + '<th style="padding:5px 8px;text-align:left">Date</th><th style="padding:5px 8px;text-align:left">Student</th>'
+    + '<th style="padding:5px 8px;text-align:left">Class</th><th style="padding:5px 8px;text-align:left">Subject</th>'
+    + '<th style="padding:5px 8px;text-align:left">Tema</th><th style="padding:5px 8px;text-align:left">Type</th>'
+    + '<th style="padding:5px 8px;text-align:left">Criteria</th><th style="padding:5px 8px;text-align:left">Reason</th>'
+    + '</tr></thead><tbody>'+rows+'</tbody></table>'
+    + brandedFooter();
+  openPrintWindow(html);
+}
+</script>
+</body>
+</html>
