@@ -141,16 +141,14 @@ body{font-family:var(--font);background:var(--bg3);color:var(--text);min-height:
 
 <script>
 const CATCHUP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwpCMzMrZ5S-EmbPU2PWUXNa5E1E_9XtGcOrPkzYig0kklnn6eI8hA0LOIMNNOs5IUJvQ/exec';
-const ITEMS_JSON_URL  = 'https://raw.githubusercontent.com/PLoayza25/CalendarioEvaluacionesMiddle/main/items.json';
 const EVENTS_JSON_URL = 'https://raw.githubusercontent.com/PLoayza25/RedlandSchoolCalendar2026/main/events.json';
 const CREST_URL = 'https://raw.githubusercontent.com/PLoayza25/RedlandSchoolCalendar2026/main/insignia%20excelente%20transparente%20200.jpg';
 
 let sessionToken = null;
-let itemsData = [];
 let eventsData = [];
 let _cbN = 0;
 let studentRowCount = 0;
-let builtStudents = []; // { name, cls, from, to, missed:[], slots:[{date,dayName},...] , refAssign:{}, reason, reasonOther }
+let builtStudents = [];
 let lastReportRows = [];
 
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800); }
@@ -188,14 +186,10 @@ function doLogout(){
 function startSession(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
-  Promise.all([
-    fetch(ITEMS_JSON_URL+'?t='+Date.now()).then(r=>r.json()).catch(()=>({items:[]})),
-    fetch(EVENTS_JSON_URL+'?t='+Date.now()).then(r=>r.json()).catch(()=>({events:[]}))
-  ]).then(([items,ev])=>{
-    itemsData = items.items || [];
+  fetch(EVENTS_JSON_URL+'?t='+Date.now()).then(r=>r.json()).then(ev=>{
     eventsData = (ev.events || []);
     showToast('Data loaded.');
-  });
+  }).catch(()=>showToast('Could not load calendar data.'));
   addStudentRow();
 }
 
@@ -266,16 +260,17 @@ function buildSchedules(){
   const NUM_WEEKS=3;
 
   builtStudents = students.map(st=>{
-    // Missed assessments
-    const missed = itemsData.filter(it=>
-      matchesCurso(it.curso, st.cls) &&
-      it.date >= st.from && it.date <= st.to &&
-      it.status !== 'rejected'
+    // Missed assessments — pulled from the Calendar (events.json), type==='test' only.
+    // This ensures only officially approved/scheduled assessments are considered,
+    // and covers both Middle and Senior levels.
+    const missed = eventsData.filter(e=>
+      e.type === 'test' &&
+      e.date >= st.from && e.date <= st.to &&
+      (e.classes||[]).some(c => matchesCurso(c, st.cls))
     ).sort((a,b)=>a.date.localeCompare(b.date));
 
     const grade = gradeOf(st.cls);
 
-    // Weekly load table (grade-wide, next NUM_WEEKS weeks starting this week's Monday)
     const weeks=[];
     for(let w=0; w<NUM_WEEKS; w++){
       const wStart=new Date(startMonday); wStart.setDate(startMonday.getDate()+w*7);
@@ -288,11 +283,10 @@ function buildSchedules(){
       weeks.push({start:new Date(wStart), counts});
     }
 
-    // Wed/Fri slots for next NUM_WEEKS weeks
     const slots=[];
     for(let w=0; w<NUM_WEEKS; w++){
       const wStart=new Date(startMonday); wStart.setDate(startMonday.getDate()+w*7);
-      [2,4].forEach(offset=>{ // Wed=2, Fri=4 (Mon=0)
+      [2,4].forEach(offset=>{
         const dd=new Date(wStart); dd.setDate(wStart.getDate()+offset);
         slots.push({date:fmtDate(dd), dayName: offset===2?'Wed':'Fri'});
       });
@@ -314,7 +308,9 @@ function renderResults(){
 
     let missedRows='';
     st.missed.forEach((m,i)=>{
-      missedRows += '<tr><td><span class="refnum">'+(i+1)+'</span></td><td>'+m.date+'</td><td>'+m.subject+'</td><td>'+(m.tema||'—')+'</td><td>'+m.type+'</td><td>'+(m.criterios||[]).join(', ')+'</td></tr>';
+      const displaySubject = m.subject || m.title || '—';
+      const displayType = m.atype || 'Test';
+      missedRows += '<tr><td><span class="refnum">'+(i+1)+'</span></td><td>'+m.date+'</td><td>'+displaySubject+'</td><td>'+(m.tema||'—')+'</td><td>'+displayType+'</td><td>'+(m.criterios||[]).join(', ')+'</td></tr>';
     });
 
     let loadRows='';
@@ -368,21 +364,23 @@ function assignSlot(inputEl){
   }
   const m=st.missed[ref-1];
   st.refAssign[slotIdx]={ref, item:m};
-  fillEl.textContent=m.subject+(m.tema?': '+m.tema:'');
+  const displaySubject = m.subject || m.title || '—';
+  fillEl.textContent=displaySubject+(m.tema?': '+m.tema:'');
   fillEl.classList.add('has');
 }
 
 function submitAll(){
   const entries=[];
   builtStudents.forEach(st=>{
-    const reasonSel=document.getElementById('reason-'+builtStudents.indexOf(st)).value;
-    const reasonOther=document.getElementById('reason-other-'+builtStudents.indexOf(st)).value.trim();
+    const idx = builtStudents.indexOf(st);
+    const reasonSel=document.getElementById('reason-'+idx).value;
+    const reasonOther=document.getElementById('reason-other-'+idx).value.trim();
     st.slots.forEach((slot,i)=>{
       const a=st.refAssign[i];
       if(a){
         entries.push({
           studentName: st.name, class: st.cls, absentFrom: st.from, absentTo: st.to,
-          originalSubject: a.item.subject, originalTema: a.item.tema||'', originalType: a.item.type,
+          originalSubject: a.item.subject || a.item.title || '', originalTema: a.item.tema||'', originalType: a.item.atype || 'Test',
           originalCriterios: a.item.criterios||[], originalDate: a.item.date,
           newDate: slot.date, reason: reasonSel, reasonOther: reasonSel==='Other'?reasonOther:''
         });
