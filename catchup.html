@@ -44,15 +44,17 @@ body{font-family:var(--font);background:var(--bg3);color:var(--text);min-height:
 .card h3{font-size:14px;font-weight:600;color:var(--black);margin-bottom:12px}
 .frow{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:10px}
 .fb label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px}
-.fb input,.fb select{width:100%;font-size:13px;padding:7px 9px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none;font-family:var(--font)}
+.fb input,.fb select,.fb textarea{width:100%;font-size:13px;padding:7px 9px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none;font-family:var(--font)}
 .rm-btn{background:#fcebeb;color:var(--red);border:0.5px solid #f09595;border-radius:var(--r);padding:7px 10px;font-size:12px;cursor:pointer;font-family:var(--font)}
 .add-student-btn{background:none;border:1px dashed var(--border2);border-radius:var(--r);padding:8px 14px;font-size:12px;cursor:pointer;color:var(--text2);font-family:var(--font);width:100%}
+.weeks-field{max-width:160px;margin-bottom:14px}
 
 .student-panel{border:0.5px solid var(--border);border-radius:var(--rl);padding:1rem;margin-bottom:1rem;background:var(--bg2)}
 .student-panel h4{font-size:13px;color:var(--red);margin-bottom:10px}
 .mini-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px;background:var(--bg)}
 .mini-table th{background:var(--bg2);padding:5px 8px;text-align:left;font-size:10px;color:var(--text2);border-bottom:0.5px solid var(--border)}
 .mini-table td{padding:5px 8px;border-bottom:0.5px solid var(--border)}
+.mini-table td.chk{text-align:center}
 .refnum{display:inline-block;background:var(--black);color:#fff;font-size:10px;font-weight:700;width:18px;height:18px;line-height:18px;text-align:center;border-radius:3px}
 
 .load-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:12px}
@@ -100,6 +102,7 @@ body{font-family:var(--font);background:var(--bg3);color:var(--text);min-height:
   <div class="tabpage active" id="page-new">
     <div class="card">
       <h3>Students</h3>
+      <div class="fb weeks-field"><label>Weeks ahead</label><input type="number" id="weeks-ahead" min="1" max="12" value="3"></div>
       <div id="student-inputs"></div>
       <button class="add-student-btn" onclick="addStudentRow()">+ Add student</button>
       <div style="margin-top:14px">
@@ -255,19 +258,19 @@ function buildSchedules(){
   });
   if(!students.length){ showToast('Enter at least one student with all fields filled.'); return; }
 
+  let NUM_WEEKS = parseInt(document.getElementById('weeks-ahead').value) || 3;
+  if(NUM_WEEKS < 1) NUM_WEEKS = 1;
+  if(NUM_WEEKS > 12) NUM_WEEKS = 12;
+
   const today=new Date();
   const startMonday=mondayOfWeekContaining(today);
-  const NUM_WEEKS=3;
 
   builtStudents = students.map(st=>{
-    // Missed assessments — pulled from the Calendar (events.json), type==='test' only.
-    // This ensures only officially approved/scheduled assessments are considered,
-    // and covers both Middle and Senior levels.
     const missed = eventsData.filter(e=>
       e.type === 'test' &&
       e.date >= st.from && e.date <= st.to &&
       (e.classes||[]).some(c => matchesCurso(c, st.cls))
-    ).sort((a,b)=>a.date.localeCompare(b.date));
+    ).sort((a,b)=>a.date.localeCompare(b.date)).map(m=>({...m, coordDirect:false}));
 
     const grade = gradeOf(st.cls);
 
@@ -310,7 +313,8 @@ function renderResults(){
     st.missed.forEach((m,i)=>{
       const displaySubject = m.subject || m.title || '—';
       const displayType = m.atype || 'Test';
-      missedRows += '<tr><td><span class="refnum">'+(i+1)+'</span></td><td>'+m.date+'</td><td>'+displaySubject+'</td><td>'+(m.tema||'—')+'</td><td>'+displayType+'</td><td>'+(m.criterios||[]).join(', ')+'</td></tr>';
+      missedRows += '<tr><td><span class="refnum">'+(i+1)+'</span></td><td>'+m.date+'</td><td>'+displaySubject+'</td><td>'+(m.tema||'—')+'</td><td>'+displayType+'</td><td>'+(m.criterios||[]).join(', ')+'</td>'
+        + '<td class="chk"><input type="checkbox" data-si="'+si+'" data-ref="'+(i+1)+'" onchange="toggleDirect(this)"></td></tr>';
     });
 
     let loadRows='';
@@ -330,7 +334,7 @@ function renderResults(){
 
     panel.innerHTML =
       '<h4>'+st.name+' · '+st.cls+' · Absent '+st.from+' to '+st.to+'</h4>'
-      + (st.missed.length ? '<table class="mini-table"><thead><tr><th>#</th><th>Date</th><th>Subject</th><th>Tema</th><th>Type</th><th>Criteria</th></tr></thead><tbody>'+missedRows+'</tbody></table>'
+      + (st.missed.length ? '<table class="mini-table"><thead><tr><th>#</th><th>Date</th><th>Subject</th><th>Tema</th><th>Type</th><th>Criteria</th><th>Direct w/ teacher</th></tr></thead><tbody>'+missedRows+'</tbody></table>'
         : '<p style="font-size:12px;color:var(--text2);margin-bottom:10px">No assessments found for this class in that date range.</p>')
       + '<table class="load-table"><tbody>'+loadRows+'</tbody></table>'
       + '<div style="font-size:11px;color:var(--text2);margin-bottom:6px">Assign a reference number (from the missed list above) to a catch-up slot:</div>'
@@ -340,7 +344,8 @@ function renderResults(){
       + '<option>Sick leave</option><option>Authorized absence</option><option>Unauthorized absence</option><option value="Other">Other</option>'
       + '</select></div>'
       + '<div class="fb" id="reason-other-wrap-'+si+'" style="display:none"><label>Specify reason</label><input type="text" id="reason-other-'+si+'" placeholder="Enter reason"></div>'
-      + '</div>';
+      + '</div>'
+      + '<div class="fb" style="margin-top:10px"><label>Comments (optional)</label><textarea id="comments-'+si+'" rows="2" placeholder="Additional notes..."></textarea></div>';
 
     area.appendChild(panel);
   });
@@ -349,6 +354,25 @@ function renderResults(){
 function onReasonChange(si){
   const sel=document.getElementById('reason-'+si).value;
   document.getElementById('reason-other-wrap-'+si).style.display = sel==='Other' ? 'block' : 'none';
+}
+
+function toggleDirect(el){
+  const si=Number(el.dataset.si);
+  const ref=Number(el.dataset.ref);
+  const st=builtStudents[si];
+  st.missed[ref-1].coordDirect = el.checked;
+  if(el.checked){
+    Object.keys(st.refAssign).forEach(k=>{
+      if(st.refAssign[k] && st.refAssign[k].ref===ref){
+        st.refAssign[k]=null;
+        const fillEl=document.getElementById('fill-'+si+'-'+k);
+        if(fillEl){ fillEl.textContent='—'; fillEl.classList.remove('has'); }
+        const inputEl=document.querySelector('.slot-row input[data-si="'+si+'"][data-slot="'+k+'"]');
+        if(inputEl) inputEl.value='';
+      }
+    });
+    showToast('That assessment will be listed for direct teacher coordination instead.');
+  }
 }
 
 function assignSlot(inputEl){
@@ -363,6 +387,13 @@ function assignSlot(inputEl){
     return;
   }
   const m=st.missed[ref-1];
+  if(m.coordDirect){
+    showToast('This assessment is marked "Direct w/ teacher" — it cannot be assigned to a catch-up date.');
+    inputEl.value='';
+    st.refAssign[slotIdx]=null;
+    fillEl.textContent='—'; fillEl.classList.remove('has');
+    return;
+  }
   st.refAssign[slotIdx]={ref, item:m};
   const displaySubject = m.subject || m.title || '—';
   fillEl.textContent=displaySubject+(m.tema?': '+m.tema:'');
@@ -371,10 +402,11 @@ function assignSlot(inputEl){
 
 function submitAll(){
   const entries=[];
-  builtStudents.forEach(st=>{
-    const idx = builtStudents.indexOf(st);
+  builtStudents.forEach((st,idx)=>{
     const reasonSel=document.getElementById('reason-'+idx).value;
     const reasonOther=document.getElementById('reason-other-'+idx).value.trim();
+    const comments=document.getElementById('comments-'+idx).value.trim();
+
     st.slots.forEach((slot,i)=>{
       const a=st.refAssign[i];
       if(a){
@@ -382,16 +414,29 @@ function submitAll(){
           studentName: st.name, class: st.cls, absentFrom: st.from, absentTo: st.to,
           originalSubject: a.item.subject || a.item.title || '', originalTema: a.item.tema||'', originalType: a.item.atype || 'Test',
           originalCriterios: a.item.criterios||[], originalDate: a.item.date,
-          newDate: slot.date, reason: reasonSel, reasonOther: reasonSel==='Other'?reasonOther:''
+          newDate: slot.date, reason: reasonSel, reasonOther: reasonSel==='Other'?reasonOther:'',
+          comments: comments, status: 'rescheduled'
+        });
+      }
+    });
+
+    st.missed.forEach(m=>{
+      if(m.coordDirect){
+        entries.push({
+          studentName: st.name, class: st.cls, absentFrom: st.from, absentTo: st.to,
+          originalSubject: m.subject || m.title || '', originalTema: m.tema||'', originalType: m.atype || 'Test',
+          originalCriterios: m.criterios||[], originalDate: m.date,
+          newDate: '', reason: reasonSel, reasonOther: reasonSel==='Other'?reasonOther:'',
+          comments: comments, status: 'teacher-coordinated'
         });
       }
     });
   });
-  if(!entries.length){ showToast('Assign at least one catch-up slot before submitting.'); return; }
+  if(!entries.length){ showToast('Assign at least one catch-up slot or mark an assessment for teacher coordination.'); return; }
 
   apiCall({action:'addCatchUps', entries, enteredBy:'coordinator'}).then(d=>{
     if(d.ok){
-      showToast(entries.length+' catch-up date(s) saved.');
+      showToast(entries.length+' catch-up record(s) saved.');
       renderConfirmation(entries);
     } else showToast('Error: '+d.error);
   }).catch(()=>showToast('Connection error.'));
@@ -404,7 +449,7 @@ function renderConfirmation(entries){
   const area=document.getElementById('confirm-area');
   let html='<div class="card"><h3>Confirmation</h3>';
   Object.keys(byStudent).forEach(name=>{
-    html += '<div class="confirm-item"><span>'+name+' — '+byStudent[name].length+' catch-up date(s)</span>'
+    html += '<div class="confirm-item"><span>'+name+' — '+byStudent[name].length+' record(s)</span>'
       + '<button class="ibtn" onclick=\'printStudent("'+name.replace(/"/g,'&quot;')+'")\'>&#128438; Print</button></div>';
   });
   html += '</div>';
@@ -416,8 +461,12 @@ function printStudent(name){
   const entries = (window._confirmedByStudent||{})[name] || [];
   if(!entries.length) return;
   const cls = entries[0].class;
+  const comments = entries[0].comments || '';
+  const rescheduled = entries.filter(e=>e.status!=='teacher-coordinated').sort((a,b)=>a.newDate.localeCompare(b.newDate));
+  const direct = entries.filter(e=>e.status==='teacher-coordinated');
+
   let rows='';
-  entries.sort((a,b)=>a.newDate.localeCompare(b.newDate)).forEach(e=>{
+  rescheduled.forEach(e=>{
     const critStr = (e.originalCriterios||[]).join(', ')||'—';
     rows += '<tr><td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+e.newDate+'</td>'
       +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+e.originalSubject+'</td>'
@@ -425,14 +474,38 @@ function printStudent(name){
       +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+e.originalType+'</td>'
       +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+critStr+'</td></tr>';
   });
+
+  let directHtml='';
+  if(direct.length){
+    let directRows='';
+    direct.forEach(e=>{
+      const critStr=(e.originalCriterios||[]).join(', ')||'—';
+      directRows += '<li style="margin-bottom:4px"><strong>'+e.originalSubject+'</strong>'+(e.originalTema?': '+e.originalTema:'')+' — Criteria '+critStr+' (originally scheduled '+e.originalDate+')</li>';
+    });
+    directHtml = '<div style="margin-top:18px"><div style="font-size:13px;font-weight:700;color:#a32d2d;margin-bottom:6px">To be coordinated directly with the subject teacher:</div>'
+      + '<ul style="font-size:12px;padding-left:18px;margin:0">'+directRows+'</ul></div>';
+  }
+
+  let commentsHtml='';
+  if(comments){
+    commentsHtml = '<div style="margin-top:18px"><div style="font-size:13px;font-weight:700;color:#1a1a18;margin-bottom:6px">Comments:</div>'
+      + '<div style="font-size:12px;color:#333;white-space:pre-wrap">'+comments.replace(/</g,'&lt;')+'</div></div>';
+  }
+
+  const tableHtml = rescheduled.length
+    ? '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+      + '<thead><tr style="background:#f5f5f3"><th style="padding:6px 8px;text-align:left">Date</th><th style="padding:6px 8px;text-align:left">Subject</th><th style="padding:6px 8px;text-align:left">Tema</th><th style="padding:6px 8px;text-align:left">Type</th><th style="padding:6px 8px;text-align:left">Criteria</th></tr></thead>'
+      + '<tbody>'+rows+'</tbody></table>'
+    : '<p style="font-size:12px;color:#666">No catch-up dates scheduled.</p>';
+
   const html = brandedHeader('Catch-up Test Schedule')
     + '<div style="margin-bottom:16px;font-size:13px">'
     + '<div><strong>Student:</strong> '+name+'</div>'
     + '<div><strong>Class:</strong> '+cls+'</div>'
     + '</div>'
-    + '<table style="width:100%;border-collapse:collapse;font-size:12px">'
-    + '<thead><tr style="background:#f5f5f3"><th style="padding:6px 8px;text-align:left">Date</th><th style="padding:6px 8px;text-align:left">Subject</th><th style="padding:6px 8px;text-align:left">Tema</th><th style="padding:6px 8px;text-align:left">Type</th><th style="padding:6px 8px;text-align:left">Criteria</th></tr></thead>'
-    + '<tbody>'+rows+'</tbody></table>'
+    + tableHtml
+    + directHtml
+    + commentsHtml
     + brandedFooter();
   openPrintWindow(html);
 }
@@ -471,15 +544,16 @@ function loadReport(){
     const level=document.getElementById('rep-level').value;
 
     let rows = d.items.filter(it=>{
-      if(from && it.newDate < from) return false;
-      if(to && it.newDate > to) return false;
+      const checkDate = it.newDate || it.originalDate;
+      if(from && checkDate < from) return false;
+      if(to && checkDate > to) return false;
       const grade = gradeOf(it.class);
       const isMiddle = /^[5-8]$/.test(grade);
       const isSenior = /^(I|II|III|IV)$/.test(grade);
       if(level==='middle' && !isMiddle) return false;
       if(level==='senior' && !isSenior) return false;
       return true;
-    }).sort((a,b)=> a.class.localeCompare(b.class) || a.newDate.localeCompare(b.newDate));
+    }).sort((a,b)=> a.class.localeCompare(b.class) || (a.newDate||a.originalDate).localeCompare(b.newDate||b.originalDate));
 
     lastReportRows = rows;
     document.getElementById('report-preview').textContent = rows.length+' catch-up record(s) found.';
@@ -491,7 +565,8 @@ function printReport(){
   let rows='';
   lastReportRows.forEach(r=>{
     const critStr=(r.originalCriterios||[]).join(', ')||'—';
-    rows += '<tr><td style="padding:5px 8px;border-bottom:0.5px solid #eee">'+r.newDate+'</td>'
+    const dateDisplay = r.status==='teacher-coordinated' ? 'Direct w/ teacher' : r.newDate;
+    rows += '<tr><td style="padding:5px 8px;border-bottom:0.5px solid #eee">'+dateDisplay+'</td>'
       +'<td style="padding:5px 8px;border-bottom:0.5px solid #eee">'+r.studentName+'</td>'
       +'<td style="padding:5px 8px;border-bottom:0.5px solid #eee">'+r.class+'</td>'
       +'<td style="padding:5px 8px;border-bottom:0.5px solid #eee">'+r.originalSubject+'</td>'
