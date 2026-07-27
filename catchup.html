@@ -343,7 +343,6 @@ function rebuildWeeksForStudent(si){
   const oldSlots = st.slots;
   const oldAssign = st.refAssign;
   st.slots = computeSlots(nw, startMonday);
-  // Preserve assignments for slots that still exist at the same index
   const newAssign = {};
   st.slots.forEach((slot,i)=>{
     if(oldSlots[i] && oldSlots[i].date===slot.date && oldAssign[i]){
@@ -379,6 +378,7 @@ function renderResults(){
   builtStudents.forEach((st,si)=>{
     const panel=document.createElement('div');
     panel.className='student-panel';
+    panel.id='student-panel-'+si;
 
     let missedRows='';
     st.missed.forEach((m,i)=>{
@@ -519,7 +519,8 @@ function renderConfirmation(entries){
   const area=document.getElementById('confirm-area');
   let html='<div class="card"><h3>Confirmation</h3>';
   Object.keys(byStudent).forEach(name=>{
-    html += '<div class="confirm-item" id="confirm-row-'+name.replace(/[^a-zA-Z0-9]/g,'_')+'"><span>'+name+' — '+byStudent[name].length+' record(s)</span>'
+    const safeId = name.replace(/[^a-zA-Z0-9]/g,'_');
+    html += '<div class="confirm-item" id="confirm-row-'+safeId+'"><span>'+name+' — '+byStudent[name].length+' record(s)</span>'
       + '<div style="display:flex;gap:6px">'
       + '<button class="ibtn" onclick=\'printStudent("'+name.replace(/"/g,'&quot;')+'")\'>&#128438; Print</button>'
       + '<button class="ibtn" onclick=\'clearStudent("'+name.replace(/"/g,'&quot;')+'")\'>&#10003; Done</button>'
@@ -532,16 +533,18 @@ function renderConfirmation(entries){
 }
 
 function clearStudent(name){
-  const rowId = 'confirm-row-'+name.replace(/[^a-zA-Z0-9]/g,'_');
-  const row = document.getElementById(rowId);
+  const safeId = name.replace(/[^a-zA-Z0-9]/g,'_');
+  const row = document.getElementById('confirm-row-'+safeId);
   if(row) row.remove();
   if(window._confirmedByStudent) delete window._confirmedByStudent[name];
 
   const idx = builtStudents.findIndex(st=>st.name===name);
   if(idx>-1){
-    const panels = document.querySelectorAll('#results-area .student-panel');
-    if(panels[idx]) panels[idx].remove();
+    const panel = document.getElementById('student-panel-'+idx);
+    if(panel) panel.remove();
     builtStudents.splice(idx,1);
+    // Re-render remaining panels so indices/IDs stay consistent
+    renderResults();
   }
   showToast(name+' cleared from screen.');
 }
@@ -556,6 +559,7 @@ function clearAll(){
   addStudentRow();
   showToast('Cleared — ready for a new schedule.');
 }
+
 function printStudent(name){
   const entries = (window._confirmedByStudent||{})[name] || [];
   if(!entries.length) return;
@@ -606,7 +610,12 @@ function printStudent(name){
     + directHtml
     + commentsHtml
     + brandedFooter();
-  openPrintWindow(html);
+
+  const today = new Date();
+  const dateStr = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  const pageTitle = name+' Catch-up Test Dates '+dateStr;
+
+  openPrintWindow(html, pageTitle);
 }
 
 function brandedHeader(subtitle){
@@ -623,9 +632,10 @@ function brandedHeader(subtitle){
 function brandedFooter(){
   return '<div style="margin-top:24px;font-size:10px;color:#a32d2d;text-align:center;border-top:2px solid #1a1a18;padding-top:8px;font-weight:600">Redland School</div></div>';
 }
-function openPrintWindow(html){
+function openPrintWindow(html, pageTitle){
+  const title = pageTitle || 'Redland School';
   const win=window.open('','_blank','width=800,height=700');
-  win.document.write('<!DOCTYPE html><html><head><title>Redland School</title>'
+  win.document.write('<!DOCTYPE html><html><head><title>'+title+'</title>'
     +'<style>body{margin:0;padding:0} @media print{.no-print{display:none}} @page{margin:15mm}</style></head><body>'
     +'<div class="no-print" style="background:#1a1a18;padding:12px 20px;display:flex;gap:10px;align-items:center">'
     +'<button onclick="window.print()" style="background:#a32d2d;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600">&#128438; Print / Save as PDF</button>'
@@ -683,7 +693,7 @@ function printReport(){
     + '<th style="padding:5px 8px;text-align:left">Criteria</th><th style="padding:5px 8px;text-align:left">Reason</th>'
     + '</tr></thead><tbody>'+rows+'</tbody></table>'
     + brandedFooter();
-  openPrintWindow(html);
+  openPrintWindow(html, 'Catch-up Tests Report '+new Date().toLocaleDateString('es-CL'));
 }
 </script>
 </body>
