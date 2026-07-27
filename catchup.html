@@ -519,14 +519,43 @@ function renderConfirmation(entries){
   const area=document.getElementById('confirm-area');
   let html='<div class="card"><h3>Confirmation</h3>';
   Object.keys(byStudent).forEach(name=>{
-    html += '<div class="confirm-item"><span>'+name+' — '+byStudent[name].length+' record(s)</span>'
-      + '<button class="ibtn" onclick=\'printStudent("'+name.replace(/"/g,'&quot;')+'")\'>&#128438; Print</button></div>';
+    html += '<div class="confirm-item" id="confirm-row-'+name.replace(/[^a-zA-Z0-9]/g,'_')+'"><span>'+name+' — '+byStudent[name].length+' record(s)</span>'
+      + '<div style="display:flex;gap:6px">'
+      + '<button class="ibtn" onclick=\'printStudent("'+name.replace(/"/g,'&quot;')+'")\'>&#128438; Print</button>'
+      + '<button class="ibtn" onclick=\'clearStudent("'+name.replace(/"/g,'&quot;')+'")\'>&#10003; Done</button>'
+      + '</div></div>';
   });
+  html += '<div style="margin-top:12px"><button class="pbtn" onclick="clearAll()">Start new schedule (clear all)</button></div>';
   html += '</div>';
   area.innerHTML = html;
   window._confirmedByStudent = byStudent;
 }
 
+function clearStudent(name){
+  const rowId = 'confirm-row-'+name.replace(/[^a-zA-Z0-9]/g,'_');
+  const row = document.getElementById(rowId);
+  if(row) row.remove();
+  if(window._confirmedByStudent) delete window._confirmedByStudent[name];
+
+  const idx = builtStudents.findIndex(st=>st.name===name);
+  if(idx>-1){
+    const panels = document.querySelectorAll('#results-area .student-panel');
+    if(panels[idx]) panels[idx].remove();
+    builtStudents.splice(idx,1);
+  }
+  showToast(name+' cleared from screen.');
+}
+
+function clearAll(){
+  builtStudents = [];
+  document.getElementById('results-area').innerHTML='';
+  document.getElementById('confirm-area').innerHTML='';
+  document.getElementById('submit-area').style.display='none';
+  document.getElementById('student-inputs').innerHTML='';
+  studentRowCount=0;
+  addStudentRow();
+  showToast('Cleared — ready for a new schedule.');
+}
 function printStudent(name){
   const entries = (window._confirmedByStudent||{})[name] || [];
   if(!entries.length) return;
