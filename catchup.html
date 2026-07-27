@@ -47,7 +47,6 @@ body{font-family:var(--font);background:var(--bg3);color:var(--text);min-height:
 .fb input,.fb select,.fb textarea{width:100%;font-size:13px;padding:7px 9px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none;font-family:var(--font)}
 .rm-btn{background:#fcebeb;color:var(--red);border:0.5px solid #f09595;border-radius:var(--r);padding:7px 10px;font-size:12px;cursor:pointer;font-family:var(--font)}
 .add-student-btn{background:none;border:1px dashed var(--border2);border-radius:var(--r);padding:8px 14px;font-size:12px;cursor:pointer;color:var(--text2);font-family:var(--font);width:100%}
-.weeks-field{max-width:160px;margin-bottom:14px}
 
 .student-panel{border:0.5px solid var(--border);border-radius:var(--rl);padding:1rem;margin-bottom:1rem;background:var(--bg2)}
 .student-panel h4{font-size:13px;color:var(--red);margin-bottom:10px}
@@ -57,10 +56,24 @@ body{font-family:var(--font);background:var(--bg3);color:var(--text);min-height:
 .mini-table td.chk{text-align:center}
 .refnum{display:inline-block;background:var(--black);color:#fff;font-size:10px;font-weight:700;width:18px;height:18px;line-height:18px;text-align:center;border-radius:3px}
 
+.weeks-field-inline{max-width:200px;margin-bottom:12px}
+
 .load-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:12px}
-.load-table th,.load-table td{padding:4px 6px;text-align:center;border:0.5px solid var(--border)}
+.load-table th,.load-table td{padding:4px 6px;text-align:center;border:0.5px solid var(--border);vertical-align:middle}
 .load-table th{background:var(--bg2);font-size:10px}
 .load-table td.wk{text-align:left;font-weight:500}
+.load-cell{position:relative}
+.load-num{font-weight:600;font-size:11px}
+.load-bar-track{width:100%;height:5px;background:#e5e3df;border-radius:3px;margin-top:3px;overflow:hidden}
+.load-bar-fill{height:100%;border-radius:3px}
+.load-c0{background:#ffffff}
+.load-c1{background:#EAF3DE}
+.load-c2{background:#FEF3C7}
+.load-c3{background:#FCE1E1}
+.bar-c0{background:#c9c9c6}
+.bar-c1{background:#27500A}
+.bar-c2{background:#92400E}
+.bar-c3{background:#a32d2d}
 
 .slot-row{display:grid;grid-template-columns:110px 60px 1fr;gap:8px;align-items:center;margin-bottom:6px;font-size:12px}
 .slot-row input{width:100%;font-size:12px;padding:5px 7px;border:0.5px solid var(--border2);border-radius:var(--r);text-align:center}
@@ -102,7 +115,6 @@ body{font-family:var(--font);background:var(--bg3);color:var(--text);min-height:
   <div class="tabpage active" id="page-new">
     <div class="card">
       <h3>Students</h3>
-      <div class="fb weeks-field"><label>Weeks ahead</label><input type="number" id="weeks-ahead" min="1" max="12" value="3"></div>
       <div id="student-inputs"></div>
       <button class="add-student-btn" onclick="addStudentRow()">+ Add student</button>
       <div style="margin-top:14px">
@@ -246,6 +258,40 @@ function mondayOfWeekContaining(d){
   return m;
 }
 
+function loadCellClass(count){
+  if(count<=0) return {bg:'load-c0', bar:'bar-c0'};
+  if(count<=2) return {bg:'load-c1', bar:'bar-c1'};
+  if(count<=4) return {bg:'load-c2', bar:'bar-c2'};
+  return {bg:'load-c3', bar:'bar-c3'};
+}
+
+function computeWeeksData(grade, numWeeks, startMonday){
+  const weeks=[];
+  for(let w=0; w<numWeeks; w++){
+    const wStart=new Date(startMonday); wStart.setDate(startMonday.getDate()+w*7);
+    const counts=[0,0,0,0,0];
+    for(let d=0; d<5; d++){
+      const dd=new Date(wStart); dd.setDate(wStart.getDate()+d);
+      const ds=fmtDate(dd);
+      counts[d]=eventsData.filter(e=>e.type==='test' && e.date===ds && (e.classes||[]).some(c=>gradeOf(c)===grade)).length;
+    }
+    weeks.push({start:new Date(wStart), counts});
+  }
+  return weeks;
+}
+
+function computeSlots(numWeeks, startMonday){
+  const slots=[];
+  for(let w=0; w<numWeeks; w++){
+    const wStart=new Date(startMonday); wStart.setDate(startMonday.getDate()+w*7);
+    [2,4].forEach(offset=>{
+      const dd=new Date(wStart); dd.setDate(wStart.getDate()+offset);
+      slots.push({date:fmtDate(dd), dayName: offset===2?'Wed':'Fri'});
+    });
+  }
+  return slots;
+}
+
 function buildSchedules(){
   const rows=[...document.querySelectorAll('#student-inputs .frow')];
   const students=[];
@@ -258,10 +304,6 @@ function buildSchedules(){
   });
   if(!students.length){ showToast('Enter at least one student with all fields filled.'); return; }
 
-  let NUM_WEEKS = parseInt(document.getElementById('weeks-ahead').value) || 3;
-  if(NUM_WEEKS < 1) NUM_WEEKS = 1;
-  if(NUM_WEEKS > 12) NUM_WEEKS = 12;
-
   const today=new Date();
   const startMonday=mondayOfWeekContaining(today);
 
@@ -273,33 +315,62 @@ function buildSchedules(){
     ).sort((a,b)=>a.date.localeCompare(b.date)).map(m=>({...m, coordDirect:false}));
 
     const grade = gradeOf(st.cls);
+    const numWeeks = Math.max(2, Math.ceil(missed.length / 2));
+    const weeks = computeWeeksData(grade, numWeeks, startMonday);
+    const slots = computeSlots(numWeeks, startMonday);
 
-    const weeks=[];
-    for(let w=0; w<NUM_WEEKS; w++){
-      const wStart=new Date(startMonday); wStart.setDate(startMonday.getDate()+w*7);
-      const counts=[0,0,0,0,0];
-      for(let d=0; d<5; d++){
-        const dd=new Date(wStart); dd.setDate(wStart.getDate()+d);
-        const ds=fmtDate(dd);
-        counts[d]=eventsData.filter(e=>e.type==='test' && e.date===ds && (e.classes||[]).some(c=>gradeOf(c)===grade)).length;
-      }
-      weeks.push({start:new Date(wStart), counts});
-    }
-
-    const slots=[];
-    for(let w=0; w<NUM_WEEKS; w++){
-      const wStart=new Date(startMonday); wStart.setDate(startMonday.getDate()+w*7);
-      [2,4].forEach(offset=>{
-        const dd=new Date(wStart); dd.setDate(wStart.getDate()+offset);
-        slots.push({date:fmtDate(dd), dayName: offset===2?'Wed':'Fri'});
-      });
-    }
-
-    return { ...st, grade, missed, weeks, slots, refAssign:{}, reason:'Sick leave', reasonOther:'' };
+    return { ...st, grade, missed, numWeeks, weeks, slots, refAssign:{}, reason:'Sick leave', reasonOther:'' };
   });
 
   renderResults();
   document.getElementById('submit-area').style.display='block';
+}
+
+function rebuildWeeksForStudent(si){
+  const st = builtStudents[si];
+  const input = document.getElementById('weeks-input-'+si);
+  let nw = parseInt(input.value) || 2;
+  if(nw < 1) nw = 1;
+  if(nw > 20) nw = 20;
+  input.value = nw;
+
+  const today=new Date();
+  const startMonday=mondayOfWeekContaining(today);
+
+  st.numWeeks = nw;
+  st.weeks = computeWeeksData(st.grade, nw, startMonday);
+
+  const oldSlots = st.slots;
+  const oldAssign = st.refAssign;
+  st.slots = computeSlots(nw, startMonday);
+  // Preserve assignments for slots that still exist at the same index
+  const newAssign = {};
+  st.slots.forEach((slot,i)=>{
+    if(oldSlots[i] && oldSlots[i].date===slot.date && oldAssign[i]){
+      newAssign[i] = oldAssign[i];
+    }
+  });
+  st.refAssign = newAssign;
+
+  renderResults();
+}
+
+function loadTableHtml(weeks){
+  let loadRows='';
+  const maxCount = Math.max(1, ...weeks.flatMap(w=>w.counts));
+  weeks.forEach(w=>{
+    loadRows += '<tr><td class="wk">Week of '+w.start.toLocaleDateString('es-CL',{day:'numeric',month:'short'})+'</td>'
+      + w.counts.map((c,i)=>{
+          const cls = loadCellClass(c);
+          const barWidth = Math.round((c/maxCount)*100);
+          return '<td class="load-cell '+cls.bg+'">'
+            + '<div class="load-num">'+DAY_NAMES[i]+' '+c+'</div>'
+            + '<div class="load-bar-track"><div class="load-bar-fill '+cls.bar+'" style="width:'+barWidth+'%"></div></div>'
+            + '</td>';
+        }).join('')
+      + '</tr>';
+  });
+  return '<table class="load-table"><tbody>'+loadRows+'</tbody></table>';
 }
 
 function renderResults(){
@@ -313,22 +384,19 @@ function renderResults(){
     st.missed.forEach((m,i)=>{
       const displaySubject = m.subject || m.title || '—';
       const displayType = m.atype || 'Test';
+      const checkedAttr = m.coordDirect ? 'checked' : '';
       missedRows += '<tr><td><span class="refnum">'+(i+1)+'</span></td><td>'+m.date+'</td><td>'+displaySubject+'</td><td>'+(m.tema||'—')+'</td><td>'+displayType+'</td><td>'+(m.criterios||[]).join(', ')+'</td>'
-        + '<td class="chk"><input type="checkbox" data-si="'+si+'" data-ref="'+(i+1)+'" onchange="toggleDirect(this)"></td></tr>';
-    });
-
-    let loadRows='';
-    st.weeks.forEach(w=>{
-      loadRows += '<tr><td class="wk">Week of '+w.start.toLocaleDateString('es-CL',{day:'numeric',month:'short'})+'</td>'
-        +w.counts.map((c,i)=>'<td>'+DAY_NAMES[i]+' '+c+'</td>').join('')+'</tr>';
+        + '<td class="chk"><input type="checkbox" '+checkedAttr+' data-si="'+si+'" data-ref="'+(i+1)+'" onchange="toggleDirect(this)"></td></tr>';
     });
 
     let slotRows='';
     st.slots.forEach((slot,i)=>{
+      const assigned = st.refAssign[i];
+      const val = assigned ? assigned.ref : '';
       slotRows += '<div class="slot-row">'
         +'<span>'+slot.dayName+' '+new Date(slot.date+'T12:00:00').toLocaleDateString('es-CL',{day:'numeric',month:'short'})+'</span>'
-        +'<input type="number" min="1" placeholder="#" data-si="'+si+'" data-slot="'+i+'" onchange="assignSlot(this)">'
-        +'<span class="slot-fill" id="fill-'+si+'-'+i+'">—</span>'
+        +'<input type="number" min="1" placeholder="#" value="'+val+'" data-si="'+si+'" data-slot="'+i+'" onchange="assignSlot(this)">'
+        +'<span class="slot-fill '+(assigned?'has':'')+'" id="fill-'+si+'-'+i+'">'+(assigned ? ((assigned.item.subject||assigned.item.title||'—')+(assigned.item.tema?': '+assigned.item.tema:'')) : '—')+'</span>'
         +'</div>';
     });
 
@@ -336,16 +404,20 @@ function renderResults(){
       '<h4>'+st.name+' · '+st.cls+' · Absent '+st.from+' to '+st.to+'</h4>'
       + (st.missed.length ? '<table class="mini-table"><thead><tr><th>#</th><th>Date</th><th>Subject</th><th>Tema</th><th>Type</th><th>Criteria</th><th>Direct w/ teacher</th></tr></thead><tbody>'+missedRows+'</tbody></table>'
         : '<p style="font-size:12px;color:var(--text2);margin-bottom:10px">No assessments found for this class in that date range.</p>')
-      + '<table class="load-table"><tbody>'+loadRows+'</tbody></table>'
+      + '<div class="fb weeks-field-inline"><label>Weeks ahead</label><input type="number" id="weeks-input-'+si+'" min="1" max="20" value="'+st.numWeeks+'" onchange="rebuildWeeksForStudent('+si+')"></div>'
+      + loadTableHtml(st.weeks)
       + '<div style="font-size:11px;color:var(--text2);margin-bottom:6px">Assign a reference number (from the missed list above) to a catch-up slot:</div>'
       + slotRows
       + '<div class="reason-row">'
       + '<div class="fb"><label>Reason</label><select id="reason-'+si+'" onchange="onReasonChange('+si+')">'
-      + '<option>Sick leave</option><option>Authorized absence</option><option>Unauthorized absence</option><option value="Other">Other</option>'
+      + '<option'+(st.reason==='Sick leave'?' selected':'')+'>Sick leave</option>'
+      + '<option'+(st.reason==='Authorized absence'?' selected':'')+'>Authorized absence</option>'
+      + '<option'+(st.reason==='Unauthorized absence'?' selected':'')+'>Unauthorized absence</option>'
+      + '<option value="Other"'+(st.reason==='Other'?' selected':'')+'>Other</option>'
       + '</select></div>'
-      + '<div class="fb" id="reason-other-wrap-'+si+'" style="display:none"><label>Specify reason</label><input type="text" id="reason-other-'+si+'" placeholder="Enter reason"></div>'
+      + '<div class="fb" id="reason-other-wrap-'+si+'" style="display:'+(st.reason==='Other'?'block':'none')+'"><label>Specify reason</label><input type="text" id="reason-other-'+si+'" value="'+(st.reasonOther||'')+'" placeholder="Enter reason"></div>'
       + '</div>'
-      + '<div class="fb" style="margin-top:10px"><label>Comments (optional)</label><textarea id="comments-'+si+'" rows="2" placeholder="Additional notes..."></textarea></div>';
+      + '<div class="fb" style="margin-top:10px"><label>Comments (optional)</label><textarea id="comments-'+si+'" rows="2" placeholder="Additional notes...">'+(st.comments||'')+'</textarea></div>';
 
     area.appendChild(panel);
   });
@@ -353,6 +425,7 @@ function renderResults(){
 
 function onReasonChange(si){
   const sel=document.getElementById('reason-'+si).value;
+  builtStudents[si].reason = sel;
   document.getElementById('reason-other-wrap-'+si).style.display = sel==='Other' ? 'block' : 'none';
 }
 
@@ -365,12 +438,9 @@ function toggleDirect(el){
     Object.keys(st.refAssign).forEach(k=>{
       if(st.refAssign[k] && st.refAssign[k].ref===ref){
         st.refAssign[k]=null;
-        const fillEl=document.getElementById('fill-'+si+'-'+k);
-        if(fillEl){ fillEl.textContent='—'; fillEl.classList.remove('has'); }
-        const inputEl=document.querySelector('.slot-row input[data-si="'+si+'"][data-slot="'+k+'"]');
-        if(inputEl) inputEl.value='';
       }
     });
+    renderResults();
     showToast('That assessment will be listed for direct teacher coordination instead.');
   }
 }
