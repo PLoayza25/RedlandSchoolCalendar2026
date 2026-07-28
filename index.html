@@ -1362,6 +1362,8 @@ function openPrintModal() {
     +'<div class="print-check-grid" id="pf-class-grid"></div></div>'
     +'<div class="print-filter-block" style="margin-bottom:10px"><label>Subject (optional — leave blank for all)</label>'
     +'<select id="pf-subject">'+subjectOpts+'</select></div>'
+    +'<div class="print-filter-block" style="margin-bottom:10px"><label>Keyword search (optional — matches title or tema)</label>'
+    +'<input type="text" id="pf-keyword" placeholder="e.g. Charlie, Handball, Ecuaciones..."></div>'
     +'<div class="print-filter-block" style="margin-bottom:12px"><label>Criteria (optional)</label>'
     +'<div class="print-check-grid">'
     +['A','B','C','D'].map(c=>'<label class="print-check"><input type="checkbox" class="pcr" value="'+c+'"> '+c+'</label>').join('')
@@ -1402,6 +1404,7 @@ function openPrintModal() {
     const selClasses = [...document.querySelectorAll('.plv:checked')].map(e=>e.value);
     const subjFilter = document.getElementById('pf-subject').value;
     const selCriteria = [...document.querySelectorAll('.pcr:checked')].map(e=>e.value);
+    const keyword = (document.getElementById('pf-keyword').value || '').trim().toLowerCase();
 
     return events.filter(ev => {
       if (ev.date < from || ev.date > to) return false;
@@ -1412,13 +1415,25 @@ function openPrintModal() {
         if (!matchesClass) return false;
       }
 
-      if (subjFilter && ev.subject && ev.subject !== subjFilter) return false;
+      if (subjFilter) {
+        if (ev.type === 'test') {
+          if (!ev.subject || ev.subject !== subjFilter) return false;
+        } else {
+          if (ev.subject && ev.subject !== subjFilter) return false;
+        }
+      }
+
       if (selCriteria.length && ev.criterios && ev.criterios.length && !ev.criterios.some(c=>selCriteria.includes(c))) return false;
+
+      if (keyword) {
+        const titleMatch = (ev.title||'').toLowerCase().includes(keyword);
+        const temaMatch  = (ev.tema||'').toLowerCase().includes(keyword);
+        if (!titleMatch && !temaMatch) return false;
+      }
 
       return true;
     }).sort((a,b)=>a.date.localeCompare(b.date));
   }
-
   function updatePreview() {
     const filtered = getFiltered();
     const preview = document.getElementById('print-preview');
