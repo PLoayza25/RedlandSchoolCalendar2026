@@ -1440,14 +1440,89 @@ function openPrintModal() {
     const filtered = getFiltered();
     const fromDate = document.getElementById('pf-from').value;
     const toDate = document.getElementById('pf-to').value;
+    const selClasses = [...document.querySelectorAll('.plv:checked')].map(e=>e.value);
+    const subjFilter = document.getElementById('pf-subject').value;
     backdrop.remove();
-    doPrint(filtered, fromDate, toDate);
+    doPrint(filtered, fromDate, toDate, selClasses, subjFilter);
   };
 }
 
-function doPrint(filtered, fromDate, toDate) {
+function buildLevelSubjectLabel(selClasses, subjFilter){
+  const MIDDLE_GRADES = ['5','6','7','8'];
+  const MIDDLE_ORDINALS = {5:'5th',6:'6th',7:'7th',8:'8th'};
+  const SENIOR_LEVELS = ['I','II','III','IV'];
+
+  // Group selected classes by grade/level
+  const byGradeSelected = {}; // grade -> Set of letters present
+  const allMiddleClasses = CLASSES.Middle;
+  const allSeniorClasses = CLASSES.Senior;
+
+  const selSet = new Set(selClasses);
+
+  function gradeLettersSelected(grade, allClassesForGrade) {
+    return allClassesForGrade.filter(c => c.startsWith(grade) && selSet.has(c));
+  }
+
+  // Determine which Middle grades are FULLY selected, and which Senior levels are FULLY selected
+  const fullMiddleGrades = MIDDLE_GRADES.filter(g => {
+    const classesForGrade = allMiddleClasses.filter(c => c.startsWith(g));
+    return classesForGrade.length>0 && classesForGrade.every(c => selSet.has(c));
+  });
+  const fullSeniorLevels = SENIOR_LEVELS.filter(lvl => {
+    const classesForLevel = allSeniorClasses.filter(c => c.startsWith(lvl) && !c.startsWith(lvl+'I')); // avoid I matching II/III
+    // Better: exact prefix match using regex boundary
+    return false; // placeholder, replaced below
+  });
+
+  // Proper senior level matching: classes are IA,IB / IIA,IIB / IIIA,IIIB / IVA,IVB
+  function seniorClassesForLevel(lvl){
+    return allSeniorClasses.filter(c => {
+      const m = c.match(/^(IV|III|II|I)([AB])$/);
+      return m && m[1]===lvl;
+    });
+  }
+  const fullSeniorLevelsReal = SENIOR_LEVELS.filter(lvl=>{
+    const classesForLevel = seniorClassesForLevel(lvl);
+    return classesForLevel.length>0 && classesForLevel.every(c=>selSet.has(c));
+  });
+
+  const allMiddleFull = fullMiddleGrades.length === MIDDLE_GRADES.length;
+  const allSeniorFull = fullSeniorLevelsReal.length === SENIOR_LEVELS.length;
+
+  let levelLabel;
+  if (allMiddleFull && allSeniorFull) {
+    levelLabel = 'All levels';
+  } else if (allMiddleFull && fullSeniorLevelsReal.length===0) {
+    levelLabel = '5th-8th Grade';
+  } else if (allSeniorFull && fullMiddleGrades.length===0) {
+    levelLabel = 'I-IV';
+  } else if (fullMiddleGrades.length===1 && fullSeniorLevelsReal.length===0) {
+    levelLabel = MIDDLE_ORDINALS[fullMiddleGrades[0]] + ' Grade';
+  } else if (fullSeniorLevelsReal.length===1 && fullMiddleGrades.length===0) {
+    levelLabel = fullSeniorLevelsReal[0];
+  } else {
+    // Fallback: comma-separated list of whatever full units we found,
+    // plus list any leftover individual classes not covered by a full unit.
+    const parts = [];
+    fullMiddleGrades.forEach(g=>parts.push(MIDDLE_ORDINALS[g]+' Grade'));
+    fullSeniorLevelsReal.forEach(lvl=>parts.push(lvl));
+    // Any selected classes not part of a "full" grade/level -> list individually
+    const coveredClasses = new Set();
+    fullMiddleGrades.forEach(g=>allMiddleClasses.filter(c=>c.startsWith(g)).forEach(c=>coveredClasses.add(c)));
+    fullSeniorLevelsReal.forEach(lvl=>seniorClassesForLevel(lvl).forEach(c=>coveredClasses.add(c)));
+    selClasses.forEach(c=>{ if(!coveredClasses.has(c)) parts.push(c); });
+    levelLabel = parts.length ? parts.join(', ') : 'Selected classes';
+  }
+
+  const subjectLabel = subjFilter ? subjFilter : 'All subjects';
+  return levelLabel + ' \u2013 ' + subjectLabel;
+}
+
+function doPrint(filtered, fromDate, toDate, selClasses, subjFilter) {
   const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'All sections',feriado:'Feriado',sports:'Sports'};
   const CREST_URL = 'https://raw.githubusercontent.com/PLoayza25/RedlandSchoolCalendar2026/main/insignia%20excelente%20transparente%20200.jpg';
+
+  const levelSubjectLabel = buildLevelSubjectLabel(selClasses||[], subjFilter||'');
 
   const byDateMap = {};
   filtered.forEach(e => {
@@ -1481,13 +1556,16 @@ function doPrint(filtered, fromDate, toDate) {
   const weekYearFmt = d => d.toLocaleDateString('es-CL', {year:'numeric'});
 
   let html = '<div style="font-family:Arial,sans-serif;max-width:750px;margin:0 auto;padding:20px">'
-    +'<div style="display:flex;align-items:center;gap:16px;margin-bottom:10px;border-bottom:3px solid #a32d2d;padding-bottom:10px">'
+    +'<div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:10px;border-bottom:3px solid #a32d2d;padding-bottom:10px">'
     +'<img src="'+CREST_URL+'" style="width:56px;height:56px;object-fit:contain" alt="Redland School crest">'
     +'<div style="flex:1">'
     +'<h1 style="font-size:20px;font-weight:700;margin:0;color:#1a1a18">Redland School</h1>'
     +'<div style="font-size:13px;color:#a32d2d;font-weight:600;margin-top:2px">School Calendar</div>'
     +'</div>'
-    +'<span style="font-size:12px;color:#888">Printed: '+new Date().toLocaleDateString('es-CL')+'</span>'
+    +'<div style="text-align:right">'
+    +'<div style="font-size:14px;font-weight:700;color:#1a1a18">'+levelSubjectLabel+'</div>'
+    +'<div style="font-size:11px;color:#888;margin-top:3px">Printed: '+new Date().toLocaleDateString('es-CL')+'</div>'
+    +'</div>'
     +'</div>'
     +'<div style="box-sizing:border-box;display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:0 8px;border-left:3px solid transparent">'
     +'<div style="flex:1"></div>'
@@ -1552,8 +1630,10 @@ function doPrint(filtered, fromDate, toDate) {
   html += '<div style="margin-top:16px;font-size:10px;color:#a32d2d;text-align:center;border-top:2px solid #1a1a18;padding-top:6px;font-weight:600">Redland School &nbsp;·&nbsp; '+filtered.length+' events</div>';
   html += '</div>';
 
+  const pageTitle = 'Redland School Calendar ' + levelSubjectLabel.replace(/–/g,'-') + ' ' + new Date().toISOString().slice(0,10);
+
   const win = window.open('','_blank','width=800,height=700');
-  win.document.write('<!DOCTYPE html><html><head><title>School Calendar</title>'
+  win.document.write('<!DOCTYPE html><html><head><title>'+pageTitle+'</title>'
     +'<style>body{margin:0;padding:0} @media print{.no-print{display:none !important}} '
     +'@page{margin:15mm}</style></head><body>'
     +'<div class="no-print" id="print-toolbar" style="background:#f0f0ee;padding:12px 20px;display:flex;gap:10px;align-items:center">'
