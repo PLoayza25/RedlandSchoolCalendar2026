@@ -776,12 +776,23 @@ function showDetail(evId, anchorEl) {
   document.body.appendChild(popup);
   activePopup = popup;
   const rect = anchorEl.getBoundingClientRect();
+  const popupHeight = 220; // approximate max height of the popup
+  const popupWidth = 284;
   let top  = rect.bottom+window.scrollY+4;
   let left = rect.left+window.scrollX;
-  if (left+284>window.innerWidth) left=window.innerWidth-290;
-  if (top+200>window.innerHeight+window.scrollY) top=rect.top+window.scrollY-210;
-  popup.style.top=top+'px'; popup.style.left=left+'px';
-}
+
+  // Flip above the chip if there isn't enough room below the visible viewport
+  const spaceBelow = window.innerHeight - rect.bottom;
+  if (spaceBelow < popupHeight) {
+    top = rect.top + window.scrollY - popupHeight - 4;
+    if (top < window.scrollY + 8) top = window.scrollY + 8; // clamp to top of viewport if still too tight
+  }
+
+  if (left + popupWidth > window.innerWidth) left = window.innerWidth - popupWidth - 8;
+  if (left < 8) left = 8;
+
+  popup.style.top = top + 'px';
+  popup.style.left = left + 'px';
 
 document.addEventListener('click', e=>{
   if (activePopup&&!activePopup.contains(e.target)&&!e.target.classList.contains('ev')&&!e.target.classList.contains('wev')) closePopup();
