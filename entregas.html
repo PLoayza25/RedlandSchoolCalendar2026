@@ -156,6 +156,13 @@ let dueFilterDate = '';
 
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
 
+// Display-only formatter: yyyy-mm-dd -> dd-mm-yyyy. Leaves non-date strings (like '--') untouched.
+function toDMY(dateStr){
+  if(!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr || '--';
+  const [y,m,d] = dateStr.split('-');
+  return d+'-'+m+'-'+y;
+}
+
 function apiCall(payload, useToken){
   if(useToken!==false && sessionToken) payload.token = sessionToken;
   return new Promise((resolve,reject)=>{
@@ -235,7 +242,6 @@ function workingDaysBetween(startStr, endStr){
   return count;
 }
 
-// Add N working days to a start date (used to find the "due" date for a pending slot)
 function addWorkingDays(startStr, n){
   let d = parseLocal(startStr);
   let added = 0;
@@ -324,19 +330,15 @@ function matchesFilters(r){
   }
 
   if(dueFilterActive){
-    // Row must have at least one PENDING slot (no submission date) whose 10-working-day due date is <= the chosen due date.
     const teacherFields = ['teacher1','teacher2','teacher3'];
     const dateFields = ['date1','date2','date3'];
     let hasQualifyingPending = false;
     for(let i=0;i<3;i++){
       const hasTeacher = !!r[teacherFields[i]];
       const hasDate = !!r[dateFields[i]];
-      // Only consider a slot "in play" if a teacher name was entered (i.e., relevant), and no submission date yet.
-      // If no teacher name at all was entered for any slot, fall back to treating slot 1 as the implicit single-teacher case.
-      if(hasDate) continue; // already submitted, skip
+      if(hasDate) continue;
       const dueDate = addWorkingDays(r.date, 10);
       if(dueDate <= dueFilterDate) {
-        // Only count this slot if it's "relevant": either a teacher name was typed, or it's slot 1 with no teachers entered at all (default single-teacher case)
         const anyTeacherEntered = r.teacher1 || r.teacher2 || r.teacher3;
         if(hasTeacher || (i===0 && !anyTeacherEntered)){
           hasQualifyingPending = true;
@@ -412,7 +414,7 @@ function render(){
     const s3 = computeSlot(r.date, r.date3);
 
     html += '<tr>';
-    html += '<td>'+r.date+'</td>';
+    html += '<td>'+toDMY(r.date)+'</td>';
     html += '<td><strong>'+r.class+'</strong></td>';
     html += '<td>'+(r.subject||'—')+'</td>';
     html += '<td>'+(r.tema||'—')+'</td>';
@@ -426,7 +428,7 @@ function render(){
         html += '<td><input type="date" class="date-input" value="'+dateVal+'" data-row="'+rowKey+'" data-field="date'+n+'" onchange="onSlotChange(this)"></td>';
       } else {
         html += '<td>'+(teacherVal||'—')+'</td>';
-        html += '<td>'+(dateVal||'--')+'</td>';
+        html += '<td>'+toDMY(dateVal)+'</td>';
       }
       html += '<td>'+(slot.daysLabel||'--')+'</td>';
       html += '<td>'+slot.statusHtml+'</td>';
@@ -482,7 +484,7 @@ function printDueReport(){
       }
     });
     if(pendingSlots.length===0) return;
-    rowsHtml += '<tr><td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+r.date+'</td>'
+    rowsHtml += '<tr><td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+toDMY(r.date)+'</td>'
       +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+r.class+'</td>'
       +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.subject||'—')+'</td>'
       +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.tema||'—')+'</td>'
@@ -496,7 +498,7 @@ function printDueReport(){
     +'<h1 style="font-size:20px;font-weight:700;margin:0;color:#1a1a18">Redland School</h1>'
     +'<div style="font-size:13px;color:#a32d2d;font-weight:600;margin-top:2px">Entregas Pendientes</div>'
     +'</div>'
-    +'<div style="text-align:right;font-size:11px;color:#888">Vencidas al '+dueFilterDate+'<br>Impreso: '+new Date().toLocaleDateString('es-CL')+'</div>'
+    +'<div style="text-align:right;font-size:11px;color:#888">Vencidas al '+toDMY(dueFilterDate)+'<br>Impreso: '+toDMY(new Date().toISOString().slice(0,10))+'</div>'
     +'</div>'
     +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
     +'<thead><tr style="background:#f5f5f3">'
