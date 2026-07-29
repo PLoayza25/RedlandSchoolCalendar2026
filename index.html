@@ -793,7 +793,7 @@ function showDetail(evId, anchorEl) {
 
   popup.style.top = top + 'px';
   popup.style.left = left + 'px';
-
+}
 document.addEventListener('click', e=>{
   if (activePopup&&!activePopup.contains(e.target)&&!e.target.classList.contains('ev')&&!e.target.classList.contains('wev')) closePopup();
 });
