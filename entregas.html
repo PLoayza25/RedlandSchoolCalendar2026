@@ -39,10 +39,13 @@ body{font-family:var(--font);background:var(--bg3);color:var(--text);min-height:
 .fb select,.fb input{width:100%;font-size:13px;padding:7px 9px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:var(--font)}
 .range-note{font-size:11px;color:var(--text3);margin-top:4px}
 
+.due-row{display:flex;gap:10px;align-items:end;margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border);flex-wrap:wrap}
+.due-row .fb{max-width:220px}
+
 table{width:100%;border-collapse:collapse;font-size:12px}
 th{background:var(--bg2);padding:7px 8px;text-align:left;font-size:10px;color:var(--text2);border-bottom:0.5px solid var(--border);white-space:nowrap}
 th.sortable{cursor:pointer;user-select:none}
-th.sortable:hover{background:var(--border-light,#e5e3df)}
+th.sortable:hover{background:#e5e3df}
 .sort-arrow{font-size:9px;margin-left:3px;opacity:.6}
 td{padding:6px 8px;border-bottom:0.5px solid var(--border);vertical-align:middle}
 tr:hover td{background:var(--bg2)}
@@ -96,6 +99,16 @@ tr:hover td{background:var(--bg2)}
       </div>
     </div>
     <div class="range-note">Mostrando evaluaciones del 20-07-2026 al 10-12-2026 (2° semestre). Haz clic en "Fecha" o "Clase" en la tabla para ordenar.</div>
+
+    <div class="due-row">
+      <div class="fb">
+        <label>Pendientes vencidas al</label>
+        <input type="date" id="due-date">
+      </div>
+      <button class="pbtn" onclick="applyDueFilter()">Ver pendientes vencidas</button>
+      <button class="ibtn" onclick="clearDueFilter()">Quitar filtro</button>
+      <button class="ibtn" id="print-due-btn" onclick="printDueReport()" style="display:none">&#128438; Imprimir / PDF</button>
+    </div>
   </div>
 
   <div class="card">
@@ -124,6 +137,7 @@ tr:hover td{background:var(--bg2)}
 <script>
 const ENTREGA_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzU0kRUwi9Km9VClZwD0NrGIAskWSC-4XRMfwnelT4VFx_cyI8ZnrXpqQePXMNSv8at/exec';
 const EVENTS_JSON_URL = 'https://raw.githubusercontent.com/PLoayza25/RedlandSchoolCalendar2026/main/events.json';
+const CREST_URL = 'https://raw.githubusercontent.com/PLoayza25/RedlandSchoolCalendar2026/main/insignia%20excelente%20transparente%20200.jpg';
 
 const RANGE_START = '2026-07-20';
 const RANGE_END   = '2026-12-10';
@@ -136,6 +150,9 @@ let _cbN = 0;
 
 let sortField = 'date';
 let sortDir = 'asc';
+
+let dueFilterActive = false;
+let dueFilterDate = '';
 
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
 
@@ -218,6 +235,19 @@ function workingDaysBetween(startStr, endStr){
   return count;
 }
 
+// Add N working days to a start date (used to find the "due" date for a pending slot)
+function addWorkingDays(startStr, n){
+  let d = parseLocal(startStr);
+  let added = 0;
+  while(added < n){
+    d.setDate(d.getDate()+1);
+    const dow = d.getDay();
+    const ds = fmtDate(d);
+    if(dow!==0 && dow!==6 && !isFeriado(ds)) added++;
+  }
+  return fmtDate(d);
+}
+
 function loadAll(){
   Promise.all([
     fetch(EVENTS_JSON_URL+'?t='+Date.now()).then(r=>r.json()).catch(()=>({events:[]})),
@@ -292,7 +322,47 @@ function matchesFilters(r){
     if(fStatus==='ontime' && !['date1','date2','date3'].some(f=>r[f] && workingDaysBetween(r.date,r[f])<=10)) return false;
     if(fStatus==='late' && !['date1','date2','date3'].some(f=>r[f] && workingDaysBetween(r.date,r[f])>10)) return false;
   }
+
+  if(dueFilterActive){
+    // Row must have at least one PENDING slot (no submission date) whose 10-working-day due date is <= the chosen due date.
+    const teacherFields = ['teacher1','teacher2','teacher3'];
+    const dateFields = ['date1','date2','date3'];
+    let hasQualifyingPending = false;
+    for(let i=0;i<3;i++){
+      const hasTeacher = !!r[teacherFields[i]];
+      const hasDate = !!r[dateFields[i]];
+      // Only consider a slot "in play" if a teacher name was entered (i.e., relevant), and no submission date yet.
+      // If no teacher name at all was entered for any slot, fall back to treating slot 1 as the implicit single-teacher case.
+      if(hasDate) continue; // already submitted, skip
+      const dueDate = addWorkingDays(r.date, 10);
+      if(dueDate <= dueFilterDate) {
+        // Only count this slot if it's "relevant": either a teacher name was typed, or it's slot 1 with no teachers entered at all (default single-teacher case)
+        const anyTeacherEntered = r.teacher1 || r.teacher2 || r.teacher3;
+        if(hasTeacher || (i===0 && !anyTeacherEntered)){
+          hasQualifyingPending = true;
+        }
+      }
+    }
+    if(!hasQualifyingPending) return false;
+  }
+
   return true;
+}
+
+function applyDueFilter(){
+  const val = document.getElementById('due-date').value;
+  if(!val){ showToast('Selecciona una fecha primero.'); return; }
+  dueFilterActive = true;
+  dueFilterDate = val;
+  document.getElementById('print-due-btn').style.display = 'inline-block';
+  render();
+}
+
+function clearDueFilter(){
+  dueFilterActive = false;
+  dueFilterDate = '';
+  document.getElementById('print-due-btn').style.display = 'none';
+  render();
 }
 
 function setSort(field){
@@ -387,6 +457,77 @@ function onSlotChange(el){
     if(d.ok){ showToast('Guardado.'); render(); }
     else showToast('Error: '+d.error);
   }).catch(()=>showToast('Error de conexión.'));
+}
+
+// ── Printable report of pending entries due by the selected date ──
+function printDueReport(){
+  if(!dueFilterActive){ showToast('Selecciona una fecha y aplica el filtro primero.'); return; }
+  const filtered = sortRows(rows.filter(matchesFilters));
+  if(filtered.length===0){ showToast('No hay entradas pendientes vencidas para esta fecha.'); return; }
+
+  let rowsHtml = '';
+  filtered.forEach(r=>{
+    const pendingSlots = [];
+    [1,2,3].forEach(n=>{
+      const teacher = r['teacher'+n];
+      const dateVal = r['date'+n];
+      if(!dateVal){
+        const anyTeacherEntered = r.teacher1 || r.teacher2 || r.teacher3;
+        if(teacher || (n===1 && !anyTeacherEntered)){
+          const dueDate = addWorkingDays(r.date, 10);
+          if(dueDate <= dueFilterDate){
+            pendingSlots.push(teacher || '(sin nombre asignado)');
+          }
+        }
+      }
+    });
+    if(pendingSlots.length===0) return;
+    rowsHtml += '<tr><td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+r.date+'</td>'
+      +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+r.class+'</td>'
+      +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.subject||'—')+'</td>'
+      +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.tema||'—')+'</td>'
+      +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+pendingSlots.join(', ')+'</td></tr>';
+  });
+
+  const html = '<div style="font-family:Arial,sans-serif;max-width:750px;margin:0 auto;padding:20px">'
+    +'<div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;border-bottom:3px solid #a32d2d;padding-bottom:12px">'
+    +'<img src="'+CREST_URL+'" style="width:56px;height:56px;object-fit:contain" alt="Redland School crest">'
+    +'<div style="flex:1">'
+    +'<h1 style="font-size:20px;font-weight:700;margin:0;color:#1a1a18">Redland School</h1>'
+    +'<div style="font-size:13px;color:#a32d2d;font-weight:600;margin-top:2px">Entregas Pendientes</div>'
+    +'</div>'
+    +'<div style="text-align:right;font-size:11px;color:#888">Vencidas al '+dueFilterDate+'<br>Impreso: '+new Date().toLocaleDateString('es-CL')+'</div>'
+    +'</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:#f5f5f3">'
+    +'<th style="padding:6px 8px;text-align:left">Fecha</th><th style="padding:6px 8px;text-align:left">Clase</th>'
+    +'<th style="padding:6px 8px;text-align:left">Asignatura</th><th style="padding:6px 8px;text-align:left">Tema</th>'
+    +'<th style="padding:6px 8px;text-align:left">Profesor(es) pendiente(s)</th>'
+    +'</tr></thead><tbody>'+rowsHtml+'</tbody></table>'
+    +'<div style="margin-top:20px;font-size:10px;color:#a32d2d;text-align:center;border-top:2px solid #1a1a18;padding-top:8px;font-weight:600">Redland School</div>'
+    +'</div>';
+
+  const pageTitle = 'Entregas Pendientes ' + dueFilterDate;
+  const win = window.open('','_blank','width=800,height=700');
+  win.document.write('<!DOCTYPE html><html><head><title>'+pageTitle+'</title>'
+    +'<style>body{margin:0;padding:0} @media print{.no-print{display:none !important}} @page{margin:15mm}</style></head><body>'
+    +'<div class="no-print" id="print-toolbar" style="background:#f0f0ee;padding:12px 20px;display:flex;gap:10px;align-items:center">'
+    +'<button id="print-btn" style="background:#1a1a18;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer">&#128438; Imprimir / Guardar PDF</button>'
+    +'<button id="close-btn" style="margin-left:auto;background:none;border:0.5px solid #ccc;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer">Cerrar</button>'
+    +'</div>'
+    +html
+    +'<script>'
+    +'document.getElementById("print-btn").onclick=function(){'
+    +'  var tb=document.getElementById("print-toolbar");'
+    +'  if(tb) tb.style.display="none";'
+    +'  window.print();'
+    +'  setTimeout(function(){ if(tb) tb.style.display="flex"; }, 500);'
+    +'};'
+    +'document.getElementById("close-btn").onclick=function(){ window.close(); };'
+    +'window.onafterprint=function(){ var tb=document.getElementById("print-toolbar"); if(tb) tb.style.display="flex"; };'
+    +'<\/script>'
+    +'</body></html>');
+  win.document.close();
 }
 
 document.getElementById('f-class').addEventListener('change', render);
