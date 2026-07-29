@@ -34,12 +34,16 @@ body{font-family:var(--font);background:var(--bg3);color:var(--text);min-height:
 .login-inline input{width:100%;font-size:13px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:var(--r);margin-bottom:10px}
 .lerr{font-size:12px;color:var(--red);margin-top:6px;min-height:16px}
 
-.filter-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.filter-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:6px}
 .fb label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px}
 .fb select,.fb input{width:100%;font-size:13px;padding:7px 9px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:var(--font)}
+.range-note{font-size:11px;color:var(--text3);margin-top:4px}
 
 table{width:100%;border-collapse:collapse;font-size:12px}
 th{background:var(--bg2);padding:7px 8px;text-align:left;font-size:10px;color:var(--text2);border-bottom:0.5px solid var(--border);white-space:nowrap}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{background:var(--border-light,#e5e3df)}
+.sort-arrow{font-size:9px;margin-left:3px;opacity:.6}
 td{padding:6px 8px;border-bottom:0.5px solid var(--border);vertical-align:middle}
 tr:hover td{background:var(--bg2)}
 .slot-input{width:90px;font-size:11px;padding:4px 6px;border:0.5px solid var(--border2);border-radius:4px}
@@ -48,9 +52,6 @@ tr:hover td{background:var(--bg2)}
 .st-ontime{background:#DCFCE7;color:#166534}
 .st-late{background:#FEE2E2;color:#991B1B}
 .st-none{color:var(--text3)}
-.days-num{font-size:11px;color:var(--text2);margin-left:4px}
-.save-ind{font-size:10px;color:var(--green);margin-left:4px;opacity:0;transition:opacity .3s}
-.save-ind.show{opacity:1}
 
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--black);color:#fff;font-size:12px;padding:8px 18px;border-radius:var(--r);z-index:400;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1}
@@ -94,6 +95,7 @@ tr:hover td{background:var(--bg2)}
         </select>
       </div>
     </div>
+    <div class="range-note">Mostrando evaluaciones del 20-07-2026 al 10-12-2026 (2° semestre). Haz clic en "Fecha" o "Clase" en la tabla para ordenar.</div>
   </div>
 
   <div class="card">
@@ -101,8 +103,8 @@ tr:hover td{background:var(--bg2)}
       <table id="main-table">
         <thead>
           <tr>
-            <th>Fecha</th>
-            <th>Clase</th>
+            <th class="sortable" id="th-date" onclick="setSort('date')">Fecha <span class="sort-arrow" id="arrow-date"></span></th>
+            <th class="sortable" id="th-class" onclick="setSort('class')">Clase <span class="sort-arrow" id="arrow-class"></span></th>
             <th>Asignatura</th>
             <th>Tema</th>
             <th>Profesor 1</th><th>Fecha 1</th><th>Días</th><th>Estado</th>
@@ -123,11 +125,17 @@ tr:hover td{background:var(--bg2)}
 const ENTREGA_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzU0kRUwi9Km9VClZwD0NrGIAskWSC-4XRMfwnelT4VFx_cyI8ZnrXpqQePXMNSv8at/exec';
 const EVENTS_JSON_URL = 'https://raw.githubusercontent.com/PLoayza25/RedlandSchoolCalendar2026/main/events.json';
 
+const RANGE_START = '2026-07-20';
+const RANGE_END   = '2026-12-10';
+
 let sessionToken = null;
 let eventsData = [];
 let entregasData = [];
-let rows = []; // merged, expanded rows
+let rows = [];
 let _cbN = 0;
+
+let sortField = 'date';
+let sortDir = 'asc';
 
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
 
@@ -195,7 +203,6 @@ function isFeriado(dateStr){
   return eventsData.some(e=>e.type==='feriado' && e.date===dateStr);
 }
 
-// Working days (Mon-Fri, excluding Feriado) between two date strings (inclusive of start, exclusive counting logic below)
 function workingDaysBetween(startStr, endStr){
   if(!startStr || !endStr) return null;
   let d = parseLocal(startStr);
@@ -227,6 +234,7 @@ function loadAll(){
 function buildRows(){
   const tests = eventsData.filter(e=>{
     if(e.type!=='test') return false;
+    if(e.date < RANGE_START || e.date > RANGE_END) return false;
     const grades = (e.classes||[]).map(gradeOf);
     return grades.some(g=>['5','6','7','8'].includes(g));
   });
@@ -249,7 +257,6 @@ function buildRows(){
       });
     });
   });
-  rows.sort((a,b)=>a.date.localeCompare(b.date));
 }
 
 function populateFilters(){
@@ -263,12 +270,6 @@ function populateFilters(){
   clsSel.value = curCls; subSel.value = curSub;
 }
 
-function slotStatus(dateVal){
-  if(!dateVal) return {label:'--', cls:'st-none', days:null};
-  const days = workingDaysBetween(getRowScheduledDate(dateVal), dateVal);
-  return null; // placeholder, replaced by computeSlot below
-}
-
 function computeSlot(scheduledDate, submittedDate){
   if(!submittedDate) return {daysLabel:'--', statusHtml:'<span class="status-pill st-none">--</span>'};
   const days = workingDaysBetween(scheduledDate, submittedDate);
@@ -276,8 +277,6 @@ function computeSlot(scheduledDate, submittedDate){
   const statusHtml = '<span class="status-pill '+(late?'st-late':'st-ontime')+'">'+(late?'Atrasado':'A tiempo')+'</span>';
   return {daysLabel: String(days), statusHtml};
 }
-
-function getRowScheduledDate(_){ return null; } // unused helper cleanup
 
 function matchesFilters(r){
   const fClass = document.getElementById('f-class').value;
@@ -288,29 +287,45 @@ function matchesFilters(r){
   if(fSubject && r.subject!==fSubject) return false;
 
   if(fStatus){
-    const slots = [
-      computeSlot(r.date, r.date1),
-      computeSlot(r.date, r.date2),
-      computeSlot(r.date, r.date3)
-    ];
     const hasAny = r.date1||r.date2||r.date3;
     if(fStatus==='pending' && hasAny) return false;
-    if(fStatus==='ontime' && !slots.some((s,i)=>{
-      const d=[r.date1,r.date2,r.date3][i];
-      return d && workingDaysBetween(r.date,d)<=10;
-    })) return false;
-    if(fStatus==='late' && !slots.some((s,i)=>{
-      const d=[r.date1,r.date2,r.date3][i];
-      return d && workingDaysBetween(r.date,d)>10;
-    })) return false;
+    if(fStatus==='ontime' && !['date1','date2','date3'].some(f=>r[f] && workingDaysBetween(r.date,r[f])<=10)) return false;
+    if(fStatus==='late' && !['date1','date2','date3'].some(f=>r[f] && workingDaysBetween(r.date,r[f])>10)) return false;
   }
   return true;
+}
+
+function setSort(field){
+  if(sortField===field){
+    sortDir = sortDir==='asc' ? 'desc' : 'asc';
+  } else {
+    sortField = field;
+    sortDir = 'asc';
+  }
+  updateSortArrows();
+  render();
+}
+
+function updateSortArrows(){
+  document.getElementById('arrow-date').textContent = sortField==='date' ? (sortDir==='asc'?'▲':'▼') : '';
+  document.getElementById('arrow-class').textContent = sortField==='class' ? (sortDir==='asc'?'▲':'▼') : '';
+}
+
+function sortRows(list){
+  const sorted = [...list].sort((a,b)=>{
+    let cmp;
+    if(sortField==='class') cmp = a.class.localeCompare(b.class) || a.date.localeCompare(b.date);
+    else cmp = a.date.localeCompare(b.date) || a.class.localeCompare(b.class);
+    return sortDir==='asc' ? cmp : -cmp;
+  });
+  return sorted;
 }
 
 function render(){
   const coord = isCoordinator();
   const tbody = document.getElementById('table-body');
-  const filtered = rows.filter(matchesFilters);
+  let filtered = rows.filter(matchesFilters);
+  filtered = sortRows(filtered);
 
   if(filtered.length===0){
     tbody.innerHTML='';
@@ -320,7 +335,7 @@ function render(){
   document.getElementById('empty-state').style.display='none';
 
   let html='';
-  filtered.forEach((r,idx)=>{
+  filtered.forEach(r=>{
     const rowKey = r.eventId+'_'+r.class;
     const s1 = computeSlot(r.date, r.date1);
     const s2 = computeSlot(r.date, r.date2);
@@ -378,6 +393,7 @@ document.getElementById('f-class').addEventListener('change', render);
 document.getElementById('f-subject').addEventListener('change', render);
 document.getElementById('f-status').addEventListener('change', render);
 
+updateSortArrows();
 loadAll();
 </script>
 </body>
