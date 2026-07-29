@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://script.google.com https://script.googleusercontent.com; connect-src *; img-src *;">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entrega de Evaluaciones — Redland School</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f5f5f3;--bg3:#efefec;
+  --text:#1a1a18;--text2:#5f5e5a;--text3:#888780;
+  --border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.22);
+  --r:8px;--rl:12px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --red:#a32d2d;--black:#1a1a18;--green:#166534;
+}
+body{font-family:var(--font);background:var(--bg3);color:var(--text);min-height:100vh;padding:20px 16px}
+
+.hdr{max-width:1200px;margin:0 auto 1.25rem;display:flex;align-items:center;justify-content:space-between;padding-bottom:1rem;border-bottom:2px solid var(--red);flex-wrap:wrap;gap:8px}
+.hdr-title{font-size:17px;font-weight:500;color:var(--black)}
+.hdr-right{display:flex;gap:8px;align-items:center}
+.ibtn{background:none;border:0.5px solid var(--border);border-radius:var(--r);padding:6px 12px;font-size:12px;cursor:pointer;color:var(--text2);font-family:var(--font)}
+.ibtn:hover{background:var(--bg2)}
+.pbtn{background:var(--red);color:#fff;border:none;border-radius:var(--r);padding:7px 16px;font-size:13px;cursor:pointer;font-family:var(--font);font-weight:500}
+.pbtn:hover{opacity:.9}
+
+.wrap{max-width:1200px;margin:0 auto}
+
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:1.25rem;margin-bottom:1.25rem}
+.card h3{font-size:14px;font-weight:600;color:var(--black);margin-bottom:12px}
+
+.login-inline{max-width:340px;margin:0 auto;background:var(--bg);border-radius:var(--rl);border:0.5px solid var(--border);padding:1.5rem;border-top:4px solid var(--red)}
+.login-inline label{font-size:11px;color:var(--text2);display:block;margin-bottom:4px}
+.login-inline input{width:100%;font-size:13px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:var(--r);margin-bottom:10px}
+.lerr{font-size:12px;color:var(--red);margin-top:6px;min-height:16px}
+
+.filter-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.fb label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px}
+.fb select,.fb input{width:100%;font-size:13px;padding:7px 9px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:var(--font)}
+
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--bg2);padding:7px 8px;text-align:left;font-size:10px;color:var(--text2);border-bottom:0.5px solid var(--border);white-space:nowrap}
+td{padding:6px 8px;border-bottom:0.5px solid var(--border);vertical-align:middle}
+tr:hover td{background:var(--bg2)}
+.slot-input{width:90px;font-size:11px;padding:4px 6px;border:0.5px solid var(--border2);border-radius:4px}
+.date-input{width:120px;font-size:11px;padding:4px 6px;border:0.5px solid var(--border2);border-radius:4px}
+.status-pill{font-size:10px;padding:2px 7px;border-radius:999px;white-space:nowrap;display:inline-block}
+.st-ontime{background:#DCFCE7;color:#166534}
+.st-late{background:#FEE2E2;color:#991B1B}
+.st-none{color:var(--text3)}
+.days-num{font-size:11px;color:var(--text2);margin-left:4px}
+.save-ind{font-size:10px;color:var(--green);margin-left:4px;opacity:0;transition:opacity .3s}
+.save-ind.show{opacity:1}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--black);color:#fff;font-size:12px;padding:8px 18px;border-radius:var(--r);z-index:400;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+.empty-state{text-align:center;padding:2rem;color:var(--text3);font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <span class="hdr-title">Entrega de Evaluaciones — Redland School</span>
+  <div class="hdr-right">
+    <span id="mode-label" style="font-size:12px;color:var(--text2)">Vista pública</span>
+    <button class="ibtn" id="login-toggle-btn" onclick="toggleLoginBox()">Acceso Coordinador</button>
+    <button class="ibtn" id="logout-btn" onclick="doLogout()" style="display:none">Cerrar sesión</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div id="login-box" style="display:none" class="login-inline">
+    <label>Contraseña de coordinador</label>
+    <input type="password" id="lp" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="pbtn" style="width:100%" onclick="doLogin()">Ingresar</button>
+    <div class="lerr" id="lerr"></div>
+  </div>
+
+  <div class="card">
+    <h3>Filtros</h3>
+    <div class="filter-row">
+      <div class="fb"><label>Clase</label>
+        <select id="f-class"><option value="">Todas</option></select>
+      </div>
+      <div class="fb"><label>Asignatura</label>
+        <select id="f-subject"><option value="">Todas</option></select>
+      </div>
+      <div class="fb"><label>Estado</label>
+        <select id="f-status">
+          <option value="">Todos</option>
+          <option value="ontime">A tiempo</option>
+          <option value="late">Atrasado</option>
+          <option value="pending">Pendiente</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="overflow-x:auto">
+      <table id="main-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Clase</th>
+            <th>Asignatura</th>
+            <th>Tema</th>
+            <th>Profesor 1</th><th>Fecha 1</th><th>Días</th><th>Estado</th>
+            <th>Profesor 2</th><th>Fecha 2</th><th>Días</th><th>Estado</th>
+            <th>Profesor 3</th><th>Fecha 3</th><th>Días</th><th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+      <div class="empty-state" id="empty-state" style="display:none">No hay evaluaciones que coincidan con los filtros.</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ENTREGA_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzU0kRUwi9Km9VClZwD0NrGIAskWSC-4XRMfwnelT4VFx_cyI8ZnrXpqQePXMNSv8at/exec';
+const EVENTS_JSON_URL = 'https://raw.githubusercontent.com/PLoayza25/RedlandSchoolCalendar2026/main/events.json';
+
+let sessionToken = null;
+let eventsData = [];
+let entregasData = [];
+let rows = []; // merged, expanded rows
+let _cbN = 0;
+
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+function apiCall(payload, useToken){
+  if(useToken!==false && sessionToken) payload.token = sessionToken;
+  return new Promise((resolve,reject)=>{
+    const cb='_ent'+(++_cbN);
+    const timer=setTimeout(()=>{delete window[cb];reject(new Error('Timeout'));},30000);
+    window[cb]=function(data){clearTimeout(timer);delete window[cb];const s=document.getElementById('js_'+cb);if(s)s.remove();resolve(data);};
+    const url=ENTREGA_SCRIPT_URL+'?callback='+cb+'&payload='+encodeURIComponent(JSON.stringify(payload));
+    const s=document.createElement('script');s.id='js_'+cb;s.src=url;
+    s.onerror=()=>{clearTimeout(timer);delete window[cb];s.remove();reject(new Error('Network error'));};
+    document.head.appendChild(s);
+  });
+}
+
+function toggleLoginBox(){
+  const box = document.getElementById('login-box');
+  box.style.display = box.style.display==='none' ? 'block' : 'none';
+}
+
+function doLogin(){
+  const pw = document.getElementById('lp').value;
+  if(!pw) return;
+  document.getElementById('lerr').textContent='';
+  apiCall({action:'checkAuth', token:pw}).then(d=>{
+    if(d.ok){
+      sessionToken = pw;
+      document.getElementById('login-box').style.display='none';
+      document.getElementById('login-toggle-btn').style.display='none';
+      document.getElementById('logout-btn').style.display='inline-block';
+      document.getElementById('mode-label').textContent = 'Modo Coordinador';
+      showToast('Sesión iniciada.');
+      render();
+    } else {
+      document.getElementById('lerr').textContent = 'Contraseña incorrecta.';
+    }
+  }).catch(()=>{ document.getElementById('lerr').textContent='Error de conexión.'; });
+}
+
+function doLogout(){
+  sessionToken = null;
+  document.getElementById('login-toggle-btn').style.display='inline-block';
+  document.getElementById('logout-btn').style.display='none';
+  document.getElementById('mode-label').textContent = 'Vista pública';
+  showToast('Sesión cerrada.');
+  render();
+}
+
+function isCoordinator(){ return !!sessionToken; }
+
+function fmtDate(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function parseLocal(s){
+  const [y,m,d]=s.split('-').map(Number);
+  return new Date(y,m-1,d);
+}
+function gradeOf(cls){
+  const m=(cls||'').match(/^\d+/);
+  return m ? m[0] : cls;
+}
+
+function isFeriado(dateStr){
+  return eventsData.some(e=>e.type==='feriado' && e.date===dateStr);
+}
+
+// Working days (Mon-Fri, excluding Feriado) between two date strings (inclusive of start, exclusive counting logic below)
+function workingDaysBetween(startStr, endStr){
+  if(!startStr || !endStr) return null;
+  let d = parseLocal(startStr);
+  const end = parseLocal(endStr);
+  if(end < d) return 0;
+  let count = 0;
+  while(d < end){
+    d.setDate(d.getDate()+1);
+    const dow = d.getDay();
+    const ds = fmtDate(d);
+    if(dow!==0 && dow!==6 && !isFeriado(ds)) count++;
+  }
+  return count;
+}
+
+function loadAll(){
+  Promise.all([
+    fetch(EVENTS_JSON_URL+'?t='+Date.now()).then(r=>r.json()).catch(()=>({events:[]})),
+    apiCall({action:'getEntregas'}, false).catch(()=>({ok:false,items:[]}))
+  ]).then(([ev, ent])=>{
+    eventsData = ev.events || [];
+    entregasData = (ent.ok ? ent.items : []) || [];
+    buildRows();
+    populateFilters();
+    render();
+  });
+}
+
+function buildRows(){
+  const tests = eventsData.filter(e=>{
+    if(e.type!=='test') return false;
+    const grades = (e.classes||[]).map(gradeOf);
+    return grades.some(g=>['5','6','7','8'].includes(g));
+  });
+
+  rows = [];
+  tests.forEach(e=>{
+    (e.classes||[]).forEach(cls=>{
+      const grade = gradeOf(cls);
+      if(!['5','6','7','8'].includes(grade)) return;
+      const existing = entregasData.find(x=>String(x.eventId)===String(e.id) && x.class===cls);
+      rows.push({
+        eventId: e.id,
+        date: e.date,
+        class: cls,
+        subject: e.subject || '',
+        tema: e.tema || '',
+        teacher1: existing?existing.teacher1:'', date1: existing?existing.date1:'',
+        teacher2: existing?existing.teacher2:'', date2: existing?existing.date2:'',
+        teacher3: existing?existing.teacher3:'', date3: existing?existing.date3:''
+      });
+    });
+  });
+  rows.sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+function populateFilters(){
+  const classes = [...new Set(rows.map(r=>r.class))].sort();
+  const subjects = [...new Set(rows.map(r=>r.subject).filter(s=>s))].sort();
+  const clsSel = document.getElementById('f-class');
+  const subSel = document.getElementById('f-subject');
+  const curCls = clsSel.value, curSub = subSel.value;
+  clsSel.innerHTML = '<option value="">Todas</option>' + classes.map(c=>'<option value="'+c+'">'+c+'</option>').join('');
+  subSel.innerHTML = '<option value="">Todas</option>' + subjects.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
+  clsSel.value = curCls; subSel.value = curSub;
+}
+
+function slotStatus(dateVal){
+  if(!dateVal) return {label:'--', cls:'st-none', days:null};
+  const days = workingDaysBetween(getRowScheduledDate(dateVal), dateVal);
+  return null; // placeholder, replaced by computeSlot below
+}
+
+function computeSlot(scheduledDate, submittedDate){
+  if(!submittedDate) return {daysLabel:'--', statusHtml:'<span class="status-pill st-none">--</span>'};
+  const days = workingDaysBetween(scheduledDate, submittedDate);
+  const late = days > 10;
+  const statusHtml = '<span class="status-pill '+(late?'st-late':'st-ontime')+'">'+(late?'Atrasado':'A tiempo')+'</span>';
+  return {daysLabel: String(days), statusHtml};
+}
+
+function getRowScheduledDate(_){ return null; } // unused helper cleanup
+
+function matchesFilters(r){
+  const fClass = document.getElementById('f-class').value;
+  const fSubject = document.getElementById('f-subject').value;
+  const fStatus = document.getElementById('f-status').value;
+
+  if(fClass && r.class!==fClass) return false;
+  if(fSubject && r.subject!==fSubject) return false;
+
+  if(fStatus){
+    const slots = [
+      computeSlot(r.date, r.date1),
+      computeSlot(r.date, r.date2),
+      computeSlot(r.date, r.date3)
+    ];
+    const hasAny = r.date1||r.date2||r.date3;
+    if(fStatus==='pending' && hasAny) return false;
+    if(fStatus==='ontime' && !slots.some((s,i)=>{
+      const d=[r.date1,r.date2,r.date3][i];
+      return d && workingDaysBetween(r.date,d)<=10;
+    })) return false;
+    if(fStatus==='late' && !slots.some((s,i)=>{
+      const d=[r.date1,r.date2,r.date3][i];
+      return d && workingDaysBetween(r.date,d)>10;
+    })) return false;
+  }
+  return true;
+}
+
+function render(){
+  const coord = isCoordinator();
+  const tbody = document.getElementById('table-body');
+  const filtered = rows.filter(matchesFilters);
+
+  if(filtered.length===0){
+    tbody.innerHTML='';
+    document.getElementById('empty-state').style.display='block';
+    return;
+  }
+  document.getElementById('empty-state').style.display='none';
+
+  let html='';
+  filtered.forEach((r,idx)=>{
+    const rowKey = r.eventId+'_'+r.class;
+    const s1 = computeSlot(r.date, r.date1);
+    const s2 = computeSlot(r.date, r.date2);
+    const s3 = computeSlot(r.date, r.date3);
+
+    html += '<tr>';
+    html += '<td>'+r.date+'</td>';
+    html += '<td><strong>'+r.class+'</strong></td>';
+    html += '<td>'+(r.subject||'—')+'</td>';
+    html += '<td>'+(r.tema||'—')+'</td>';
+
+    [1,2,3].forEach(n=>{
+      const teacherVal = r['teacher'+n] || '';
+      const dateVal = r['date'+n] || '';
+      const slot = n===1?s1:(n===2?s2:s3);
+      if(coord){
+        html += '<td><input type="text" class="slot-input" value="'+teacherVal.replace(/"/g,'&quot;')+'" placeholder="Nombre" data-row="'+rowKey+'" data-field="teacher'+n+'" onchange="onSlotChange(this)"></td>';
+        html += '<td><input type="date" class="date-input" value="'+dateVal+'" data-row="'+rowKey+'" data-field="date'+n+'" onchange="onSlotChange(this)"></td>';
+      } else {
+        html += '<td>'+(teacherVal||'—')+'</td>';
+        html += '<td>'+(dateVal||'--')+'</td>';
+      }
+      html += '<td>'+(slot.daysLabel||'--')+'</td>';
+      html += '<td>'+slot.statusHtml+'</td>';
+    });
+
+    html += '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+function onSlotChange(el){
+  const rowKey = el.dataset.row;
+  const field = el.dataset.field;
+  const [eventId, cls] = rowKey.split('_');
+  const row = rows.find(r=>String(r.eventId)===eventId && r.class===cls);
+  if(!row) return;
+  row[field] = el.value;
+
+  apiCall({
+    action:'saveEntrega',
+    entry: {
+      eventId: row.eventId, date: row.date, class: row.class, subject: row.subject, tema: row.tema,
+      teacher1: row.teacher1, date1: row.date1,
+      teacher2: row.teacher2, date2: row.date2,
+      teacher3: row.teacher3, date3: row.date3
+    }
+  }).then(d=>{
+    if(d.ok){ showToast('Guardado.'); render(); }
+    else showToast('Error: '+d.error);
+  }).catch(()=>showToast('Error de conexión.'));
+}
+
+document.getElementById('f-class').addEventListener('change', render);
+document.getElementById('f-subject').addEventListener('change', render);
+document.getElementById('f-status').addEventListener('change', render);
+
+loadAll();
+</script>
+</body>
+</html>
