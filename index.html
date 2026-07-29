@@ -776,16 +776,15 @@ function showDetail(evId, anchorEl) {
   document.body.appendChild(popup);
   activePopup = popup;
   const rect = anchorEl.getBoundingClientRect();
-  const popupHeight = 220; // approximate max height of the popup
+  const popupHeight = 220;
   const popupWidth = 284;
-  let top  = rect.bottom+window.scrollY+4;
-  let left = rect.left+window.scrollX;
+  let top  = rect.bottom + 4;
+  let left = rect.left;
 
-  // Flip above the chip if there isn't enough room below the visible viewport
   const spaceBelow = window.innerHeight - rect.bottom;
   if (spaceBelow < popupHeight) {
-    top = rect.top + window.scrollY - popupHeight - 4;
-    if (top < window.scrollY + 8) top = window.scrollY + 8; // clamp to top of viewport if still too tight
+    top = rect.top - popupHeight - 4;
+    if (top < 8) top = 8;
   }
 
   if (left + popupWidth > window.innerWidth) left = window.innerWidth - popupWidth - 8;
