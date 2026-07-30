@@ -67,6 +67,7 @@ tr:hover td{background:var(--bg2)}
   <span class="hdr-title">Entrega de Evaluaciones — Redland School</span>
   <div class="hdr-right">
     <span id="mode-label" style="font-size:12px;color:var(--text2)">Vista pública</span>
+    <button class="ibtn" id="export-csv-btn" onclick="exportCSV()" style="display:none">&#128190; Exportar CSV</button>
     <button class="ibtn" id="login-toggle-btn" onclick="toggleLoginBox()">Acceso Coordinador</button>
     <button class="ibtn" id="logout-btn" onclick="doLogout()" style="display:none">Cerrar sesión</button>
   </div>
@@ -191,6 +192,7 @@ function doLogin(){
       document.getElementById('login-box').style.display='none';
       document.getElementById('login-toggle-btn').style.display='none';
       document.getElementById('logout-btn').style.display='inline-block';
+      document.getElementById('export-csv-btn').style.display='inline-block';
       document.getElementById('mode-label').textContent = 'Modo Coordinador';
       showToast('Sesión iniciada.');
       render();
@@ -204,6 +206,7 @@ function doLogout(){
   sessionToken = null;
   document.getElementById('login-toggle-btn').style.display='inline-block';
   document.getElementById('logout-btn').style.display='none';
+  document.getElementById('export-csv-btn').style.display='none';
   document.getElementById('mode-label').textContent = 'Vista pública';
   showToast('Sesión cerrada.');
   render();
@@ -462,6 +465,59 @@ function onSlotChange(el){
 }
 
 // ── Printable report of pending entries due by the selected date ──
+function exportCSV(){
+  const header = ['Profesor','Clase','Asignatura','Tema','Fecha evaluación','Fecha límite (10 días hábiles)','Fecha real de entrega','Días de atraso','Estado'];
+  const lines = [header];
+  const todayStr = fmtDate(new Date());
+
+  rows.forEach(r=>{
+    const dueDate = addWorkingDays(r.date, 10);
+    [1,2,3].forEach(n=>{
+      const teacher = r['teacher'+n];
+      if(!teacher) return; // only export slots with a teacher assigned
+      const actualDate = r['date'+n] || '';
+
+      let atrasoVal = '';
+      let estado = '';
+      if(actualDate){
+        const late = actualDate > dueDate;
+        atrasoVal = late ? String(workingDaysBetween(dueDate, actualDate)) : '0';
+        estado = late ? 'Atrasado' : 'A tiempo';
+      } else {
+        const overdue = todayStr > dueDate;
+        atrasoVal = overdue ? String(workingDaysBetween(dueDate, todayStr)) : '0';
+        estado = overdue ? 'Pendiente (vencido)' : 'Pendiente';
+      }
+
+      lines.push([
+        teacher,
+        r.class || '',
+        r.subject || '',
+        r.tema || '',
+        toDMY(r.date),
+        toDMY(dueDate),
+        actualDate ? toDMY(actualDate) : '',
+        atrasoVal,
+        estado
+      ]);
+    });
+  });
+
+  if(lines.length===1){ showToast('No hay registros con profesor asignado para exportar.'); return; }
+
+  const csv = lines.map(row => row.map(f => '"'+String(f).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'entregas_' + todayStr + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('CSV exportado.');
+}
+
 function printDueReport(){
   if(!dueFilterActive){ showToast('Selecciona una fecha y aplica el filtro primero.'); return; }
   const filtered = sortRows(rows.filter(matchesFilters));
