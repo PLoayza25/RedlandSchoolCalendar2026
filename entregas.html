@@ -83,7 +83,13 @@ tr:hover td{background:var(--bg2)}
 
   <div class="card">
     <h3>Filtros</h3>
-    <div class="filter-row">
+    <div class="filter-row" style="grid-template-columns:1fr 1fr 1fr 1fr">
+      <div class="fb"><label>Sección</label>
+        <select id="f-section">
+          <option value="Middle">Middle</option>
+          <option value="Senior">Senior</option>
+        </select>
+      </div>
       <div class="fb"><label>Clase</label>
         <select id="f-class"><option value="">Todas</option></select>
       </div>
@@ -110,6 +116,7 @@ tr:hover td{background:var(--bg2)}
       <button class="ibtn" onclick="clearDueFilter()">Quitar filtro</button>
       <button class="ibtn" id="print-due-btn" onclick="printDueReport()" style="display:none">&#128438; Imprimir / PDF</button>
     </div>
+    <div class="range-note" id="senior-note" style="display:none;margin-top:6px">Sección Senior: no se registra fecha de entrega a coordinación. Se listan todas las evaluaciones que cumplen el plazo de 10 días hábiles a la fecha indicada, excluyendo las que vencieron el día anterior (ya incluidas en el reporte previo).</div>
   </div>
 
   <div class="card">
@@ -225,6 +232,12 @@ function gradeOf(cls){
   const m=(cls||'').match(/^\d+/);
   return m ? m[0] : cls;
 }
+// Middle: 5A-8B. Senior: IA-IVB (roman numerals). Anything else (Junior) is excluded from Entregas.
+function sectionOf(cls){
+  if(/^[5678]/.test(cls||'')) return 'Middle';
+  if(/^(IV|III|II|I)[AB]?$/.test(cls||'')) return 'Senior';
+  return 'Other';
+}
 
 function isFeriado(dateStr){
   return eventsData.some(e=>e.type==='feriado' && e.date===dateStr);
@@ -270,26 +283,39 @@ function loadAll(){
   });
 }
 
+function deriveTema(e){
+  if(e.tema) return e.tema;
+  let t = e.title || e.titulo || e.name || '';
+  if(t && e.subject){
+    const prefix = e.subject + ':';
+    if(t.toLowerCase().startsWith(prefix.toLowerCase())){
+      t = t.slice(prefix.length).trim();
+    }
+  }
+  return t;
+}
+
 function buildRows(){
   const tests = eventsData.filter(e=>{
     if(e.type!=='test') return false;
     if(e.date < RANGE_START || e.date > RANGE_END) return false;
-    const grades = (e.classes||[]).map(gradeOf);
-    return grades.some(g=>['5','6','7','8'].includes(g));
+    const secs = (e.classes||[]).map(sectionOf);
+    return secs.some(s=>s==='Middle'||s==='Senior');
   });
 
   rows = [];
   tests.forEach(e=>{
     (e.classes||[]).forEach(cls=>{
-      const grade = gradeOf(cls);
-      if(!['5','6','7','8'].includes(grade)) return;
+      const section = sectionOf(cls);
+      if(section!=='Middle' && section!=='Senior') return;
       const existing = entregasData.find(x=>String(x.eventId)===String(e.id) && x.class===cls);
       rows.push({
         eventId: e.id,
         date: e.date,
         class: cls,
+        section: section,
         subject: e.subject || '',
-        tema: e.tema || '',
+        tema: deriveTema(e),
         teacher1: existing?existing.teacher1:'', date1: existing?existing.date1:'',
         teacher2: existing?existing.teacher2:'', date2: existing?existing.date2:'',
         teacher3: existing?existing.teacher3:'', date3: existing?existing.date3:''
@@ -299,8 +325,10 @@ function buildRows(){
 }
 
 function populateFilters(){
-  const classes = [...new Set(rows.map(r=>r.class))].sort();
-  const subjects = [...new Set(rows.map(r=>r.subject).filter(s=>s))].sort();
+  const section = document.getElementById('f-section').value;
+  const scoped = rows.filter(r=>r.section===section);
+  const classes = [...new Set(scoped.map(r=>r.class))].sort();
+  const subjects = [...new Set(scoped.map(r=>r.subject).filter(s=>s))].sort();
   const clsSel = document.getElementById('f-class');
   const subSel = document.getElementById('f-subject');
   const curCls = clsSel.value, curSub = subSel.value;
@@ -317,11 +345,19 @@ function computeSlot(scheduledDate, submittedDate){
   return {daysLabel: String(days), statusHtml};
 }
 
+function excludedYesterdayDate(){
+  const d = new Date();
+  d.setDate(d.getDate()-1);
+  return fmtDate(d);
+}
+
 function matchesFilters(r){
+  const fSection = document.getElementById('f-section').value;
   const fClass = document.getElementById('f-class').value;
   const fSubject = document.getElementById('f-subject').value;
   const fStatus = document.getElementById('f-status').value;
 
+  if(r.section !== fSection) return false;
   if(fClass && r.class!==fClass) return false;
   if(fSubject && r.subject!==fSubject) return false;
 
@@ -333,22 +369,30 @@ function matchesFilters(r){
   }
 
   if(dueFilterActive){
-    const teacherFields = ['teacher1','teacher2','teacher3'];
-    const dateFields = ['date1','date2','date3'];
-    let hasQualifyingPending = false;
-    for(let i=0;i<3;i++){
-      const hasTeacher = !!r[teacherFields[i]];
-      const hasDate = !!r[dateFields[i]];
-      if(hasDate) continue;
+    if(fSection==='Senior'){
+      // Senior: no office-delivery date is tracked. Just check whether the 10-working-day
+      // deadline has been reached by the selected date — but skip items whose deadline was
+      // exactly yesterday, since those already appeared in the previous day's report.
       const dueDate = addWorkingDays(r.date, 10);
-      if(dueDate <= dueFilterDate) {
-        const anyTeacherEntered = r.teacher1 || r.teacher2 || r.teacher3;
-        if(hasTeacher || (i===0 && !anyTeacherEntered)){
-          hasQualifyingPending = true;
+      if(!(dueDate <= dueFilterDate && dueDate !== excludedYesterdayDate())) return false;
+    } else {
+      const teacherFields = ['teacher1','teacher2','teacher3'];
+      const dateFields = ['date1','date2','date3'];
+      let hasQualifyingPending = false;
+      for(let i=0;i<3;i++){
+        const hasTeacher = !!r[teacherFields[i]];
+        const hasDate = !!r[dateFields[i]];
+        if(hasDate) continue;
+        const dueDate = addWorkingDays(r.date, 10);
+        if(dueDate <= dueFilterDate) {
+          const anyTeacherEntered = r.teacher1 || r.teacher2 || r.teacher3;
+          if(hasTeacher || (i===0 && !anyTeacherEntered)){
+            hasQualifyingPending = true;
+          }
         }
       }
+      if(!hasQualifyingPending) return false;
     }
-    if(!hasQualifyingPending) return false;
   }
 
   return true;
@@ -520,6 +564,7 @@ function exportCSV(){
 
 function printDueReport(){
   if(!dueFilterActive){ showToast('Selecciona una fecha y aplica el filtro primero.'); return; }
+  const fSection = document.getElementById('f-section').value;
   const filtered = sortRows(rows.filter(matchesFilters));
   if(filtered.length===0){ showToast('No hay entradas pendientes vencidas para esta fecha.'); return; }
 
@@ -552,7 +597,7 @@ function printDueReport(){
     +'<img src="'+CREST_URL+'" style="width:56px;height:56px;object-fit:contain" alt="Redland School crest">'
     +'<div style="flex:1">'
     +'<h1 style="font-size:20px;font-weight:700;margin:0;color:#1a1a18">Redland School</h1>'
-    +'<div style="font-size:13px;color:#a32d2d;font-weight:600;margin-top:2px">Entregas Pendientes</div>'
+    +'<div style="font-size:13px;color:#a32d2d;font-weight:600;margin-top:2px">Entregas Pendientes — '+fSection+'</div>'
     +'</div>'
     +'<div style="text-align:right;font-size:11px;color:#888">Vencidas al '+toDMY(dueFilterDate)+'<br>Impreso: '+toDMY(new Date().toISOString().slice(0,10))+'</div>'
     +'</div>'
@@ -565,7 +610,7 @@ function printDueReport(){
     +'<div style="margin-top:20px;font-size:10px;color:#a32d2d;text-align:center;border-top:2px solid #1a1a18;padding-top:8px;font-weight:600">Redland School</div>'
     +'</div>';
 
-  const pageTitle = 'Entregas Pendientes ' + dueFilterDate;
+  const pageTitle = 'Entregas Pendientes ' + fSection + ' ' + dueFilterDate;
   const win = window.open('','_blank','width=800,height=700');
   win.document.write('<!DOCTYPE html><html><head><title>'+pageTitle+'</title>'
     +'<style>body{margin:0;padding:0} @media print{.no-print{display:none !important}} @page{margin:15mm}</style></head><body>'
@@ -588,6 +633,14 @@ function printDueReport(){
   win.document.close();
 }
 
+function onSectionChange(){
+  document.getElementById('senior-note').style.display = (document.getElementById('f-section').value==='Senior') ? 'block' : 'none';
+  document.getElementById('f-class').value = '';
+  document.getElementById('f-subject').value = '';
+  populateFilters();
+  render();
+}
+document.getElementById('f-section').addEventListener('change', onSectionChange);
 document.getElementById('f-class').addEventListener('change', render);
 document.getElementById('f-subject').addEventListener('change', render);
 document.getElementById('f-status').addEventListener('change', render);
