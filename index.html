@@ -1642,9 +1642,10 @@ function doPrint(filtered, fromDate, toDate, selClasses, subjFilter) {
           const critBadges = (e.criterios&&e.criterios.length)
             ? e.criterios.map(c=>'<span style="display:inline-block;background:#1a1a18;color:#fff;font-size:9px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;margin:0 1px">'+c+'</span>').join('')
             : '<span style="font-size:10px;color:#ccc">—</span>';
+          const timePrefix = e.time && /^\d{1,2}:\d{2}$/.test(e.time) ? '<span style="font-weight:700;margin-right:5px">'+e.time+'</span>' : '';
           html += '<div style="box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:4px 8px;margin-bottom:3px;background:#f9f9f7;border-radius:5px;border-left:3px solid #a32d2d">'
             +'<div style="flex:1;min-width:0">'
-            +'<div style="font-size:13px;font-weight:600;color:#1a1a18">'+e.title+'</div>'
+            +'<div style="font-size:13px;font-weight:600;color:#1a1a18">'+timePrefix+e.title+'</div>'
             +'<div style="font-size:11px;color:#666;margin-top:1px">'+secLabel+' &nbsp;·&nbsp; '+classStr+(e.subject?' &nbsp;·&nbsp; '+e.subject:'')+'</div>'
             +'</div>'
             +'<div style="box-sizing:border-box;flex-shrink:0;width:40px;display:flex;justify-content:center;align-items:center">'+critBadges+'</div>'
