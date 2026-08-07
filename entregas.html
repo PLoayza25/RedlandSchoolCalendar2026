@@ -585,10 +585,12 @@ function printDueReport(){
       }
     });
     if(pendingSlots.length===0) return;
+    const diasTranscurridos = workingDaysBetween(r.date, dueFilterDate);
     rowsHtml += '<tr><td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+toDMY(r.date)+'</td>'
       +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+r.class+'</td>'
       +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.subject||'—')+'</td>'
       +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.tema||'—')+'</td>'
+      +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee;text-align:center">'+diasTranscurridos+'</td>'
       +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+pendingSlots.join(', ')+'</td></tr>';
   });
 
@@ -605,6 +607,7 @@ function printDueReport(){
     +'<thead><tr style="background:#f5f5f3">'
     +'<th style="padding:6px 8px;text-align:left">Fecha</th><th style="padding:6px 8px;text-align:left">Clase</th>'
     +'<th style="padding:6px 8px;text-align:left">Asignatura</th><th style="padding:6px 8px;text-align:left">Tema</th>'
+    +'<th style="padding:6px 8px;text-align:center">Días transcurridos</th>'
     +'<th style="padding:6px 8px;text-align:left">Profesor(es) pendiente(s)</th>'
     +'</tr></thead><tbody>'+rowsHtml+'</tbody></table>'
     +'<div style="margin-top:20px;font-size:10px;color:#a32d2d;text-align:center;border-top:2px solid #1a1a18;padding-top:8px;font-weight:600">Redland School</div>'
