@@ -645,8 +645,9 @@ function buildReportHtml(reportTitle, subtitleLine, theadHtml, tbodyHtml){
     +'</div>'
     +'<div style="text-align:right;font-size:11px;color:#888">'+subtitleLine+'<br>Impreso: '+toDMY(new Date().toISOString().slice(0,10))+'</div>'
     +'</div>'
-    +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
-    +'<thead><tr style="background:#f5f5f3">'+theadHtml+'</tr></thead><tbody>'+tbodyHtml+'</tbody></table>'
+    +'<style>.rt{width:100%;border-collapse:collapse;font-size:12px}.rt th{background:#f5f5f3;padding:6px 8px;text-align:left}.rt td{padding:6px 8px;border-bottom:0.5px solid #eee}</style>'
+    +'<table class="rt">'
+    +'<thead><tr>'+theadHtml+'</tr></thead><tbody>'+tbodyHtml+'</tbody></table>'
     +'<div style="margin-top:20px;font-size:10px;color:#a32d2d;text-align:center;border-top:2px solid #1a1a18;padding-top:8px;font-weight:600">Redland School</div>'
     +'</div>';
 }
@@ -714,18 +715,18 @@ function buildDueReportData(){
       }
     });
     if(pendingSlots.length===0) return;
-    rowsHtml += '<tr><td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+toDMY(r.date)+'</td>'
-      +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+r.class+'</td>'
-      +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.subject||'—')+'</td>'
-      +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.tema||'—')+'</td>'
-      +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+pendingSlots.join(', ')+'</td></tr>';
+    rowsHtml += '<tr><td>'+toDMY(r.date)+'</td>'
+      +'<td>'+r.class+'</td>'
+      +'<td>'+(r.subject||'—')+'</td>'
+      +'<td>'+(r.tema||'—')+'</td>'
+      +'<td>'+pendingSlots.join(', ')+'</td></tr>';
   });
   if(!rowsHtml){ showToast('No hay entradas pendientes vencidas para este rango.'); return null; }
 
   const rangeLabel = dueFilterFrom ? ('Vencen entre '+toDMY(dueFilterFrom)+' y '+toDMY(dueFilterTo)) : ('Vencidas al '+toDMY(dueFilterTo));
-  const thead = '<th style="padding:6px 8px;text-align:left">Fecha</th><th style="padding:6px 8px;text-align:left">Clase</th>'
-    +'<th style="padding:6px 8px;text-align:left">Asignatura</th><th style="padding:6px 8px;text-align:left">Tema</th>'
-    +'<th style="padding:6px 8px;text-align:left">Profesor(es) pendiente(s)</th>';
+  const thead = '<th>Fecha</th><th>Clase</th>'
+    +'<th>Asignatura</th><th>Tema</th>'
+    +'<th>Profesor(es) pendiente(s)</th>';
   const pageTitle = 'Entregas Pendientes ' + fSection + ' ' + (dueFilterFrom ? dueFilterFrom+'_a_'+dueFilterTo : dueFilterTo);
   return { reportTitle:'Entregas Pendientes — '+fSection, subtitleLine:rangeLabel, thead:thead, tbody:rowsHtml, pageTitle:pageTitle };
 }
@@ -776,24 +777,24 @@ function buildLateReportData(){
       }
 
       count++;
-      rowsHtml += '<tr><td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+toDMY(r.date)+'</td>'
-        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+r.class+'</td>'
-        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.subject||'—')+'</td>'
-        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.tema||'—')+'</td>'
-        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(teacher||'(sin nombre asignado)')+'</td>'
-        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+fechaEntregaLabel+'</td>'
-        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee;text-align:center;font-weight:600;color:#a32d2d">'+diasAtraso+'</td>'
-        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+estado+'</td></tr>';
+      rowsHtml += '<tr><td>'+toDMY(r.date)+'</td>'
+        +'<td>'+r.class+'</td>'
+        +'<td>'+(r.subject||'—')+'</td>'
+        +'<td>'+(r.tema||'—')+'</td>'
+        +'<td>'+(teacher||'(sin nombre asignado)')+'</td>'
+        +'<td>'+fechaEntregaLabel+'</td>'
+        +'<td style="text-align:center;font-weight:600;color:#a32d2d">'+diasAtraso+'</td>'
+        +'<td>'+estado+'</td></tr>';
     });
   });
 
   if(count===0){ showToast('No hay entregas atrasadas a esa fecha.'); return null; }
 
   const fSection = document.getElementById('f-section').value;
-  const thead = '<th style="padding:6px 8px;text-align:left">Fecha eval.</th><th style="padding:6px 8px;text-align:left">Clase</th>'
-    +'<th style="padding:6px 8px;text-align:left">Asignatura</th><th style="padding:6px 8px;text-align:left">Tema</th>'
-    +'<th style="padding:6px 8px;text-align:left">Profesor</th><th style="padding:6px 8px;text-align:left">Fecha entrega</th>'
-    +'<th style="padding:6px 8px;text-align:center">Días de atraso</th><th style="padding:6px 8px;text-align:left">Estado</th>';
+  const thead = '<th>Fecha eval.</th><th>Clase</th>'
+    +'<th>Asignatura</th><th>Tema</th>'
+    +'<th>Profesor</th><th>Fecha entrega</th>'
+    +'<th style="text-align:center">Días de atraso</th><th>Estado</th>';
   return { reportTitle:'Entregas Atrasadas — '+fSection, subtitleLine:'Atrasadas al '+toDMY(cutoff), thead:thead, tbody:rowsHtml, pageTitle:'Entregas Atrasadas '+fSection+' '+cutoff };
 }
 function printLateReport(){
@@ -827,23 +828,23 @@ function buildDeliverySummaryData(){
       if(!teacher || !dateVal) return; // only actually-delivered slots count for this summary
       const dias = workingDaysBetween(r.date, dateVal);
       count++;
-      rowsHtml += '<tr><td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+toDMY(r.date)+'</td>'
-        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+r.class+'</td>'
-        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.subject||'—')+'</td>'
-        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.tema||'—')+'</td>'
-        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+teacher+'</td>'
-        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+toDMY(dateVal)+'</td>'
-        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee;text-align:center">'+dias+'</td></tr>';
+      rowsHtml += '<tr><td>'+toDMY(r.date)+'</td>'
+        +'<td>'+r.class+'</td>'
+        +'<td>'+(r.subject||'—')+'</td>'
+        +'<td>'+(r.tema||'—')+'</td>'
+        +'<td>'+teacher+'</td>'
+        +'<td>'+toDMY(dateVal)+'</td>'
+        +'<td style="text-align:center">'+dias+'</td></tr>';
     });
   });
 
   if(count===0){ showToast('No hay entregas registradas en ese rango.'); return null; }
 
   const fSection = document.getElementById('f-section').value;
-  const thead = '<th style="padding:6px 8px;text-align:left">Fecha eval.</th><th style="padding:6px 8px;text-align:left">Clase</th>'
-    +'<th style="padding:6px 8px;text-align:left">Asignatura</th><th style="padding:6px 8px;text-align:left">Tema</th>'
-    +'<th style="padding:6px 8px;text-align:left">Profesor</th><th style="padding:6px 8px;text-align:left">Fecha entrega</th>'
-    +'<th style="padding:6px 8px;text-align:center">Días entre evaluación y entrega</th>';
+  const thead = '<th>Fecha eval.</th><th>Clase</th>'
+    +'<th>Asignatura</th><th>Tema</th>'
+    +'<th>Profesor</th><th>Fecha entrega</th>'
+    +'<th style="text-align:center">Días entre evaluación y entrega</th>';
   return { reportTitle:'Resumen de Entregas — '+fSection, subtitleLine:'Del '+toDMY(fromD)+' al '+toDMY(toD), thead:thead, tbody:rowsHtml, pageTitle:'Resumen Entregas '+fSection+' '+fromD+'_a_'+toD };
 }
 function printDeliverySummaryReport(){
