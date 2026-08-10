@@ -109,8 +109,12 @@ tr:hover td{background:var(--bg2)}
 
     <div class="due-row">
       <div class="fb">
-        <label>Pendientes vencidas al</label>
-        <input type="date" id="due-date">
+        <label>Vencen desde <span style="font-weight:400;color:var(--text3)">(opcional)</span></label>
+        <input type="date" id="due-date-from">
+      </div>
+      <div class="fb">
+        <label>Vencen hasta</label>
+        <input type="date" id="due-date-to">
       </div>
       <button class="pbtn" onclick="applyDueFilter()">Ver pendientes vencidas</button>
       <button class="ibtn" onclick="clearDueFilter()">Quitar filtro</button>
@@ -160,7 +164,8 @@ let sortField = 'date';
 let sortDir = 'asc';
 
 let dueFilterActive = false;
-let dueFilterDate = '';
+let dueFilterFrom = '';
+let dueFilterTo = '';
 
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
 
@@ -371,10 +376,13 @@ function matchesFilters(r){
   if(dueFilterActive){
     if(fSection==='Senior'){
       // Senior: no office-delivery date is tracked. Just check whether the 10-working-day
-      // deadline has been reached by the selected date — but skip items whose deadline was
-      // exactly yesterday, since those already appeared in the previous day's report.
+      // deadline falls within the selected range. When searching an explicit range (a
+      // "from" date was given), we trust the user's chosen range and skip the "yesterday"
+      // exclusion — that heuristic only applies to the old single-cutoff style of use.
       const dueDate = addWorkingDays(r.date, 10);
-      if(!(dueDate <= dueFilterDate && dueDate !== excludedYesterdayDate())) return false;
+      const inRange = dueDate <= dueFilterTo && (!dueFilterFrom || dueDate >= dueFilterFrom);
+      const skipYesterdayExclusion = !!dueFilterFrom;
+      if(!(inRange && (skipYesterdayExclusion || dueDate !== excludedYesterdayDate()))) return false;
     } else {
       const teacherFields = ['teacher1','teacher2','teacher3'];
       const dateFields = ['date1','date2','date3'];
@@ -384,7 +392,7 @@ function matchesFilters(r){
         const hasDate = !!r[dateFields[i]];
         if(hasDate) continue;
         const dueDate = addWorkingDays(r.date, 10);
-        if(dueDate <= dueFilterDate) {
+        if(dueDate <= dueFilterTo && (!dueFilterFrom || dueDate >= dueFilterFrom)) {
           const anyTeacherEntered = r.teacher1 || r.teacher2 || r.teacher3;
           if(hasTeacher || (i===0 && !anyTeacherEntered)){
             hasQualifyingPending = true;
@@ -399,17 +407,21 @@ function matchesFilters(r){
 }
 
 function applyDueFilter(){
-  const val = document.getElementById('due-date').value;
-  if(!val){ showToast('Selecciona una fecha primero.'); return; }
+  const fromVal = document.getElementById('due-date-from').value;
+  const toVal = document.getElementById('due-date-to').value;
+  if(!toVal){ showToast('Selecciona al menos la fecha "Vencen hasta".'); return; }
+  if(fromVal && fromVal > toVal){ showToast('"Vencen desde" no puede ser posterior a "Vencen hasta".'); return; }
   dueFilterActive = true;
-  dueFilterDate = val;
+  dueFilterFrom = fromVal || '';
+  dueFilterTo = toVal;
   document.getElementById('print-due-btn').style.display = 'inline-block';
   render();
 }
 
 function clearDueFilter(){
   dueFilterActive = false;
-  dueFilterDate = '';
+  dueFilterFrom = '';
+  dueFilterTo = '';
   document.getElementById('print-due-btn').style.display = 'none';
   render();
 }
@@ -566,7 +578,7 @@ function printDueReport(){
   if(!dueFilterActive){ showToast('Selecciona una fecha y aplica el filtro primero.'); return; }
   const fSection = document.getElementById('f-section').value;
   const filtered = sortRows(rows.filter(matchesFilters));
-  if(filtered.length===0){ showToast('No hay entradas pendientes vencidas para esta fecha.'); return; }
+  if(filtered.length===0){ showToast('No hay entradas pendientes vencidas para este rango.'); return; }
 
   let rowsHtml = '';
   filtered.forEach(r=>{
@@ -578,14 +590,14 @@ function printDueReport(){
         const anyTeacherEntered = r.teacher1 || r.teacher2 || r.teacher3;
         if(teacher || (n===1 && !anyTeacherEntered)){
           const dueDate = addWorkingDays(r.date, 10);
-          if(dueDate <= dueFilterDate){
+          if(dueDate <= dueFilterTo && (!dueFilterFrom || dueDate >= dueFilterFrom)){
             pendingSlots.push(teacher || '(sin nombre asignado)');
           }
         }
       }
     });
     if(pendingSlots.length===0) return;
-    const diasTranscurridos = workingDaysBetween(r.date, dueFilterDate);
+    const diasTranscurridos = workingDaysBetween(r.date, dueFilterTo);
     rowsHtml += '<tr><td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+toDMY(r.date)+'</td>'
       +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+r.class+'</td>'
       +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.subject||'—')+'</td>'
@@ -594,6 +606,8 @@ function printDueReport(){
       +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+pendingSlots.join(', ')+'</td></tr>';
   });
 
+  const rangeLabel = dueFilterFrom ? ('Vencen entre '+toDMY(dueFilterFrom)+' y '+toDMY(dueFilterTo)) : ('Vencidas al '+toDMY(dueFilterTo));
+
   const html = '<div style="font-family:Arial,sans-serif;max-width:750px;margin:0 auto;padding:20px">'
     +'<div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;border-bottom:3px solid #a32d2d;padding-bottom:12px">'
     +'<img src="'+CREST_URL+'" style="width:56px;height:56px;object-fit:contain" alt="Redland School crest">'
@@ -601,7 +615,7 @@ function printDueReport(){
     +'<h1 style="font-size:20px;font-weight:700;margin:0;color:#1a1a18">Redland School</h1>'
     +'<div style="font-size:13px;color:#a32d2d;font-weight:600;margin-top:2px">Entregas Pendientes — '+fSection+'</div>'
     +'</div>'
-    +'<div style="text-align:right;font-size:11px;color:#888">Vencidas al '+toDMY(dueFilterDate)+'<br>Impreso: '+toDMY(new Date().toISOString().slice(0,10))+'</div>'
+    +'<div style="text-align:right;font-size:11px;color:#888">'+rangeLabel+'<br>Impreso: '+toDMY(new Date().toISOString().slice(0,10))+'</div>'
     +'</div>'
     +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
     +'<thead><tr style="background:#f5f5f3">'
@@ -613,7 +627,7 @@ function printDueReport(){
     +'<div style="margin-top:20px;font-size:10px;color:#a32d2d;text-align:center;border-top:2px solid #1a1a18;padding-top:8px;font-weight:600">Redland School</div>'
     +'</div>';
 
-  const pageTitle = 'Entregas Pendientes ' + fSection + ' ' + dueFilterDate;
+  const pageTitle = 'Entregas Pendientes ' + fSection + ' ' + (dueFilterFrom ? dueFilterFrom+'_a_'+dueFilterTo : dueFilterTo);
   const win = window.open('','_blank','width=800,height=700');
   win.document.write('<!DOCTYPE html><html><head><title>'+pageTitle+'</title>'
     +'<style>body{margin:0;padding:0} @media print{.no-print{display:none !important}} @page{margin:15mm}</style></head><body>'
