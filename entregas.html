@@ -651,12 +651,13 @@ function buildReportHtml(reportTitle, subtitleLine, theadHtml, tbodyHtml){
     +'</div>';
 }
 
-function emailReport(emailInputId, reportTitle, subtitleLine, theadHtml, tbodyHtml){
+function emailReport(emailInputId, reportTitle, subtitleLine, theadHtml, tbodyHtml, subjectOverride){
   const raw = document.getElementById(emailInputId).value.trim();
   if(!raw){ showToast('Ingresa al menos un correo destinatario.'); return; }
   const html = buildReportHtml(reportTitle, subtitleLine, theadHtml, tbodyHtml);
+  const subject = subjectOverride || (reportTitle+' — '+subtitleLine.replace(/<br>.*/,''));
   showToast('Enviando correo...');
-  apiCall({ action:'sendReport', to: raw, subject: reportTitle+' — '+subtitleLine.replace(/<br>.*/,''), html: html })
+  apiCall({ action:'sendReport', to: raw, subject: subject, html: html })
     .then(d=>{
       if(d.ok) showToast('Correo enviado a: '+(d.sentTo||[]).join(', '));
       else showToast('Error: '+d.error);
@@ -736,7 +737,7 @@ function printDueReport(){
 function emailDueReport(){
   const d = buildDueReportData();
   if(!d) return;
-  emailReport('due-report-emails', d.reportTitle, d.subtitleLine, d.thead, d.tbody);
+  emailReport('due-report-emails', d.reportTitle, d.subtitleLine, d.thead, d.tbody, 'Evaluaciones a entregar esta semana');
 }
 
 // ── Reporte 2: Entregas atrasadas a una fecha de corte (con días de atraso) ──
@@ -803,7 +804,7 @@ function printLateReport(){
 function emailLateReport(){
   const d = buildLateReportData();
   if(!d) return;
-  emailReport('late-report-emails', d.reportTitle, d.subtitleLine, d.thead, d.tbody);
+  emailReport('late-report-emails', d.reportTitle, d.subtitleLine, d.thead, d.tbody, 'Evaluaciones atrasadas');
 }
 
 // ── Reporte 3: Resumen de entregas realizadas dentro de un rango de fechas ──
