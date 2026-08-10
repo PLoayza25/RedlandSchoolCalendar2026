@@ -124,6 +124,32 @@ tr:hover td{background:var(--bg2)}
   </div>
 
   <div class="card">
+    <h3>Reportes adicionales</h3>
+
+    <div class="due-row">
+      <div class="fb">
+        <label>Atrasadas al</label>
+        <input type="date" id="late-cutoff-date">
+      </div>
+      <button class="pbtn" onclick="printLateReport()">&#128438; Reporte de atrasadas</button>
+    </div>
+    <div class="range-note">Incluye entregas ya realizadas fuera de plazo y entregas aún pendientes cuyo plazo ya venció a la fecha seleccionada, indicando los días de atraso de cada una.</div>
+
+    <div class="due-row" style="margin-top:18px">
+      <div class="fb">
+        <label>Resumen desde</label>
+        <input type="date" id="summary-date-from">
+      </div>
+      <div class="fb">
+        <label>Resumen hasta</label>
+        <input type="date" id="summary-date-to">
+      </div>
+      <button class="pbtn" onclick="printDeliverySummaryReport()">&#128438; Resumen de entregas</button>
+    </div>
+    <div class="range-note">Solo evaluaciones ya entregadas dentro del rango, indicando los días hábiles entre la fecha de aplicación y la fecha de entrega.</div>
+  </div>
+
+  <div class="card">
     <div style="overflow-x:auto">
       <table id="main-table">
         <thead>
@@ -574,6 +600,58 @@ function exportCSV(){
   showToast('CSV exportado.');
 }
 
+// Section/Clase/Asignatura scope shared by all three printable reports below
+// (independent of the interactive due-filter and Estado dropdown).
+function matchesScope(r){
+  const fSection = document.getElementById('f-section').value;
+  const fClass = document.getElementById('f-class').value;
+  const fSubject = document.getElementById('f-subject').value;
+  if(r.section !== fSection) return false;
+  if(fClass && r.class!==fClass) return false;
+  if(fSubject && r.subject!==fSubject) return false;
+  return true;
+}
+
+// Shared print-window wrapper (crest, red/black branding, print toolbar) used
+// by all three reports so they stay visually consistent.
+function openReportWindow(reportTitle, subtitleLine, theadHtml, tbodyHtml, pageTitle){
+  const html = '<div style="font-family:Arial,sans-serif;max-width:750px;margin:0 auto;padding:20px">'
+    +'<div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;border-bottom:3px solid #a32d2d;padding-bottom:12px">'
+    +'<img src="'+CREST_URL+'" style="width:56px;height:56px;object-fit:contain" alt="Redland School crest">'
+    +'<div style="flex:1">'
+    +'<h1 style="font-size:20px;font-weight:700;margin:0;color:#1a1a18">Redland School</h1>'
+    +'<div style="font-size:13px;color:#a32d2d;font-weight:600;margin-top:2px">'+reportTitle+'</div>'
+    +'</div>'
+    +'<div style="text-align:right;font-size:11px;color:#888">'+subtitleLine+'<br>Impreso: '+toDMY(new Date().toISOString().slice(0,10))+'</div>'
+    +'</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:#f5f5f3">'+theadHtml+'</tr></thead><tbody>'+tbodyHtml+'</tbody></table>'
+    +'<div style="margin-top:20px;font-size:10px;color:#a32d2d;text-align:center;border-top:2px solid #1a1a18;padding-top:8px;font-weight:600">Redland School</div>'
+    +'</div>';
+
+  const win = window.open('','_blank','width=800,height=700');
+  win.document.write('<!DOCTYPE html><html><head><title>'+pageTitle+'</title>'
+    +'<style>body{margin:0;padding:0} @media print{.no-print{display:none !important}} @page{margin:15mm}</style></head><body>'
+    +'<div class="no-print" id="print-toolbar" style="background:#f0f0ee;padding:12px 20px;display:flex;gap:10px;align-items:center">'
+    +'<button id="print-btn" style="background:#1a1a18;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer">&#128438; Imprimir / Guardar PDF</button>'
+    +'<button id="close-btn" style="margin-left:auto;background:none;border:0.5px solid #ccc;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer">Cerrar</button>'
+    +'</div>'
+    +html
+    +'<script>'
+    +'document.getElementById("print-btn").onclick=function(){'
+    +'  var tb=document.getElementById("print-toolbar");'
+    +'  if(tb) tb.style.display="none";'
+    +'  window.print();'
+    +'  setTimeout(function(){ if(tb) tb.style.display="flex"; }, 500);'
+    +'};'
+    +'document.getElementById("close-btn").onclick=function(){ window.close(); };'
+    +'window.onafterprint=function(){ var tb=document.getElementById("print-toolbar"); if(tb) tb.style.display="flex"; };'
+    +'<\/script>'
+    +'</body></html>');
+  win.document.close();
+}
+
+// ── Reporte 1: Entregas pendientes dentro de un rango de fechas (sin días de atraso) ──
 function printDueReport(){
   if(!dueFilterActive){ showToast('Selecciona una fecha y aplica el filtro primero.'); return; }
   const fSection = document.getElementById('f-section').value;
@@ -597,57 +675,116 @@ function printDueReport(){
       }
     });
     if(pendingSlots.length===0) return;
-    const diasTranscurridos = workingDaysBetween(r.date, dueFilterTo);
     rowsHtml += '<tr><td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+toDMY(r.date)+'</td>'
       +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+r.class+'</td>'
       +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.subject||'—')+'</td>'
       +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.tema||'—')+'</td>'
-      +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee;text-align:center">'+diasTranscurridos+'</td>'
       +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+pendingSlots.join(', ')+'</td></tr>';
   });
 
   const rangeLabel = dueFilterFrom ? ('Vencen entre '+toDMY(dueFilterFrom)+' y '+toDMY(dueFilterTo)) : ('Vencidas al '+toDMY(dueFilterTo));
-
-  const html = '<div style="font-family:Arial,sans-serif;max-width:750px;margin:0 auto;padding:20px">'
-    +'<div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;border-bottom:3px solid #a32d2d;padding-bottom:12px">'
-    +'<img src="'+CREST_URL+'" style="width:56px;height:56px;object-fit:contain" alt="Redland School crest">'
-    +'<div style="flex:1">'
-    +'<h1 style="font-size:20px;font-weight:700;margin:0;color:#1a1a18">Redland School</h1>'
-    +'<div style="font-size:13px;color:#a32d2d;font-weight:600;margin-top:2px">Entregas Pendientes — '+fSection+'</div>'
-    +'</div>'
-    +'<div style="text-align:right;font-size:11px;color:#888">'+rangeLabel+'<br>Impreso: '+toDMY(new Date().toISOString().slice(0,10))+'</div>'
-    +'</div>'
-    +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
-    +'<thead><tr style="background:#f5f5f3">'
-    +'<th style="padding:6px 8px;text-align:left">Fecha</th><th style="padding:6px 8px;text-align:left">Clase</th>'
+  const thead = '<th style="padding:6px 8px;text-align:left">Fecha</th><th style="padding:6px 8px;text-align:left">Clase</th>'
     +'<th style="padding:6px 8px;text-align:left">Asignatura</th><th style="padding:6px 8px;text-align:left">Tema</th>'
-    +'<th style="padding:6px 8px;text-align:center">Días transcurridos</th>'
-    +'<th style="padding:6px 8px;text-align:left">Profesor(es) pendiente(s)</th>'
-    +'</tr></thead><tbody>'+rowsHtml+'</tbody></table>'
-    +'<div style="margin-top:20px;font-size:10px;color:#a32d2d;text-align:center;border-top:2px solid #1a1a18;padding-top:8px;font-weight:600">Redland School</div>'
-    +'</div>';
-
+    +'<th style="padding:6px 8px;text-align:left">Profesor(es) pendiente(s)</th>';
   const pageTitle = 'Entregas Pendientes ' + fSection + ' ' + (dueFilterFrom ? dueFilterFrom+'_a_'+dueFilterTo : dueFilterTo);
-  const win = window.open('','_blank','width=800,height=700');
-  win.document.write('<!DOCTYPE html><html><head><title>'+pageTitle+'</title>'
-    +'<style>body{margin:0;padding:0} @media print{.no-print{display:none !important}} @page{margin:15mm}</style></head><body>'
-    +'<div class="no-print" id="print-toolbar" style="background:#f0f0ee;padding:12px 20px;display:flex;gap:10px;align-items:center">'
-    +'<button id="print-btn" style="background:#1a1a18;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer">&#128438; Imprimir / Guardar PDF</button>'
-    +'<button id="close-btn" style="margin-left:auto;background:none;border:0.5px solid #ccc;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer">Cerrar</button>'
-    +'</div>'
-    +html
-    +'<script>'
-    +'document.getElementById("print-btn").onclick=function(){'
-    +'  var tb=document.getElementById("print-toolbar");'
-    +'  if(tb) tb.style.display="none";'
-    +'  window.print();'
-    +'  setTimeout(function(){ if(tb) tb.style.display="flex"; }, 500);'
-    +'};'
-    +'document.getElementById("close-btn").onclick=function(){ window.close(); };'
-    +'window.onafterprint=function(){ var tb=document.getElementById("print-toolbar"); if(tb) tb.style.display="flex"; };'
-    +'<\/script>'
-    +'</body></html>');
-  win.document.close();
+  openReportWindow('Entregas Pendientes — '+fSection, rangeLabel, thead, rowsHtml, pageTitle);
+}
+
+// ── Reporte 2: Entregas atrasadas a una fecha de corte (con días de atraso) ──
+// Incluye tanto entregas ya realizadas fuera de plazo, como entregas aún no
+// realizadas cuyo plazo ya venció a la fecha seleccionada.
+function printLateReport(){
+  const cutoff = document.getElementById('late-cutoff-date').value;
+  if(!cutoff){ showToast('Selecciona una fecha de corte.'); return; }
+
+  const scoped = rows.filter(matchesScope);
+  let rowsHtml = '';
+  let count = 0;
+
+  scoped.forEach(r=>{
+    if(r.date > cutoff) return; // evaluation itself is after the cutoff — nothing to report yet
+    const dueDate = addWorkingDays(r.date, 10);
+
+    [1,2,3].forEach(n=>{
+      const teacher = r['teacher'+n];
+      const dateVal = r['date'+n];
+      const anyTeacherEntered = r.teacher1 || r.teacher2 || r.teacher3;
+      const isTrackedSlot = teacher || (n===1 && !anyTeacherEntered);
+      if(!isTrackedSlot) return;
+
+      let estado = '', diasAtraso = null, fechaEntregaLabel = '—';
+      if(dateVal){
+        if(dateVal > cutoff) return; // delivered, but after the cutoff date — not part of this report
+        if(dateVal <= dueDate) return; // delivered on time — not late
+        diasAtraso = workingDaysBetween(dueDate, dateVal);
+        estado = 'Atrasado (entregado)';
+        fechaEntregaLabel = toDMY(dateVal);
+      } else {
+        if(dueDate > cutoff) return; // not yet due as of the cutoff
+        diasAtraso = workingDaysBetween(dueDate, cutoff);
+        estado = 'Pendiente (vencido)';
+      }
+
+      count++;
+      rowsHtml += '<tr><td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+toDMY(r.date)+'</td>'
+        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+r.class+'</td>'
+        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.subject||'—')+'</td>'
+        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.tema||'—')+'</td>'
+        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(teacher||'(sin nombre asignado)')+'</td>'
+        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+fechaEntregaLabel+'</td>'
+        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee;text-align:center;font-weight:600;color:#a32d2d">'+diasAtraso+'</td>'
+        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+estado+'</td></tr>';
+    });
+  });
+
+  if(count===0){ showToast('No hay entregas atrasadas a esa fecha.'); return; }
+
+  const fSection = document.getElementById('f-section').value;
+  const thead = '<th style="padding:6px 8px;text-align:left">Fecha eval.</th><th style="padding:6px 8px;text-align:left">Clase</th>'
+    +'<th style="padding:6px 8px;text-align:left">Asignatura</th><th style="padding:6px 8px;text-align:left">Tema</th>'
+    +'<th style="padding:6px 8px;text-align:left">Profesor</th><th style="padding:6px 8px;text-align:left">Fecha entrega</th>'
+    +'<th style="padding:6px 8px;text-align:center">Días de atraso</th><th style="padding:6px 8px;text-align:left">Estado</th>';
+  openReportWindow('Entregas Atrasadas — '+fSection, 'Atrasadas al '+toDMY(cutoff), thead, rowsHtml, 'Entregas Atrasadas '+fSection+' '+cutoff);
+}
+
+// ── Reporte 3: Resumen de entregas realizadas dentro de un rango de fechas ──
+// Solo incluye evaluaciones que SÍ fueron entregadas, mostrando los días
+// hábiles entre la fecha de aplicación y la fecha de entrega.
+function printDeliverySummaryReport(){
+  const fromD = document.getElementById('summary-date-from').value;
+  const toD = document.getElementById('summary-date-to').value;
+  if(!fromD || !toD){ showToast('Selecciona ambas fechas del rango.'); return; }
+  if(fromD > toD){ showToast('"Desde" no puede ser posterior a "Hasta".'); return; }
+
+  const scoped = rows.filter(matchesScope).filter(r=>r.date>=fromD && r.date<=toD);
+  let rowsHtml = '';
+  let count = 0;
+
+  scoped.forEach(r=>{
+    [1,2,3].forEach(n=>{
+      const teacher = r['teacher'+n];
+      const dateVal = r['date'+n];
+      if(!teacher || !dateVal) return; // only actually-delivered slots count for this summary
+      const dias = workingDaysBetween(r.date, dateVal);
+      count++;
+      rowsHtml += '<tr><td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+toDMY(r.date)+'</td>'
+        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+r.class+'</td>'
+        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.subject||'—')+'</td>'
+        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+(r.tema||'—')+'</td>'
+        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+teacher+'</td>'
+        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee">'+toDMY(dateVal)+'</td>'
+        +'<td style="padding:6px 8px;border-bottom:0.5px solid #eee;text-align:center">'+dias+'</td></tr>';
+    });
+  });
+
+  if(count===0){ showToast('No hay entregas registradas en ese rango.'); return; }
+
+  const fSection = document.getElementById('f-section').value;
+  const thead = '<th style="padding:6px 8px;text-align:left">Fecha eval.</th><th style="padding:6px 8px;text-align:left">Clase</th>'
+    +'<th style="padding:6px 8px;text-align:left">Asignatura</th><th style="padding:6px 8px;text-align:left">Tema</th>'
+    +'<th style="padding:6px 8px;text-align:left">Profesor</th><th style="padding:6px 8px;text-align:left">Fecha entrega</th>'
+    +'<th style="padding:6px 8px;text-align:center">Días entre evaluación y entrega</th>';
+  openReportWindow('Resumen de Entregas — '+fSection, 'Del '+toDMY(fromD)+' al '+toDMY(toD), thead, rowsHtml, 'Resumen Entregas '+fSection+' '+fromD+'_a_'+toD);
 }
 
 function onSectionChange(){
