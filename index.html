@@ -1480,6 +1480,7 @@ function openPrintModal() {
     +'<div class="print-preview" id="print-preview">Select filters to see matching events.</div>'
     +'<div class="modal-actions" style="margin-top:1rem">'
     +'<button class="btn-cancel" id="print-cancel">Cancel</button>'
+    +'<button class="btn-cancel" id="text-go" style="border-color:var(--border-mid)">&#128196; Texto plano</button>'
     +'<button class="btn-cancel" id="word-go" style="border-color:var(--border-mid)">&#128196; Exportar Word</button>'
     +'<button class="btn-save" id="print-go">&#128438; Open Print / PDF</button>'
     +'</div></div>';
@@ -1580,6 +1581,15 @@ function openPrintModal() {
     backdrop.remove();
     doExportWord(filtered, fromDate, toDate, selClasses, subjFilter);
   };
+  document.getElementById('text-go').onclick = ()=>{
+    const filtered = getFiltered();
+    const fromDate = document.getElementById('pf-from').value;
+    const toDate = document.getElementById('pf-to').value;
+    const selClasses = [...document.querySelectorAll('.plv:checked')].map(e=>e.value);
+    const subjFilter = document.getElementById('pf-subject').value;
+    backdrop.remove();
+    doExportPlainText(filtered, fromDate, toDate, selClasses, subjFilter);
+  };
 }
 
 function buildLevelSubjectLabel(selClasses, subjFilter){
@@ -1634,6 +1644,108 @@ function buildLevelSubjectLabel(selClasses, subjFilter){
 
   const subjectLabel = subjFilter ? subjFilter : 'All subjects';
   return levelLabel + ' \u2013 ' + subjectLabel;
+}
+
+// Plain-text export: same weeks/events as the PDF/Word reports, but as a
+// .txt file with no images, no HTML, no colors — just readable text.
+function doExportPlainText(filtered, fromDate, toDate, selClasses, subjFilter) {
+  const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'All sections',feriado:'Feriado',sports:'Sports'};
+  const levelSubjectLabel = buildLevelSubjectLabel(selClasses||[], subjFilter||'');
+
+  const byDateMap = {};
+  filtered.forEach(e => {
+    if (!byDateMap[e.date]) byDateMap[e.date] = [];
+    byDateMap[e.date].push(e);
+  });
+
+  function mondayOf(d) {
+    const day = d.getDay() || 7;
+    const m = new Date(d);
+    m.setDate(d.getDate() - (day - 1));
+    return m;
+  }
+  const startMonday = mondayOf(parseLocalDate(fromDate));
+  const endDateObj = parseLocalDate(toDate);
+
+  const weeks = [];
+  let wStart = new Date(startMonday);
+  while (wStart <= endDateObj) {
+    const wEnd = new Date(wStart);
+    wEnd.setDate(wStart.getDate() + 4);
+    weeks.push({ start: new Date(wStart), end: wEnd });
+    wStart.setDate(wStart.getDate() + 7);
+  }
+
+  function isFeriadoDate(dateStr) {
+    return events.some(e => e.type === 'feriado' && e.date === dateStr);
+  }
+
+  const weekLabelFmt = d => d.toLocaleDateString('es-CL', {day:'numeric', month:'long'});
+  const weekYearFmt = d => d.toLocaleDateString('es-CL', {year:'numeric'});
+
+  let lines = [];
+  lines.push('REDLAND SCHOOL');
+  lines.push('School Calendar — ' + levelSubjectLabel);
+  lines.push('Impreso: ' + new Date().toLocaleDateString('es-CL'));
+  lines.push('='.repeat(60));
+  lines.push('');
+
+  weeks.forEach(week => {
+    const weekDates = [];
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(week.start);
+      d.setDate(week.start.getDate() + i);
+      weekDates.push(fmt(d));
+    }
+
+    const allFeriado = weekDates.every(ds => isFeriadoDate(ds));
+    const weekAssessments = weekDates.filter(ds => byDateMap[ds] && byDateMap[ds].length > 0);
+
+    if (!allFeriado && weekAssessments.length === 0) return;
+
+    lines.push('Semana del ' + weekLabelFmt(week.start) + ' al ' + weekLabelFmt(week.end) + ' de ' + weekYearFmt(week.start));
+    lines.push('-'.repeat(60));
+
+    if (allFeriado) {
+      lines.push('  School holidays');
+    } else {
+      weekDates.forEach(ds => {
+        const dayEvents = byDateMap[ds];
+        if (!dayEvents || dayEvents.length === 0) return;
+        const d = new Date(ds+'T12:00:00');
+        const dateLabel = d.toLocaleDateString('es-CL', {weekday:'long', day:'numeric', month:'long'});
+        lines.push('');
+        lines.push('  ' + dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1));
+
+        dayEvents.forEach(e => {
+          const sk = evSectionKey(e);
+          const secLabel = sk==='Cross'?'All sections':(sk==='Sports'?'Sports':(sk==='Salida'?'Salida':sk));
+          const taskTypeLabel = e.atype ? e.atype : (typeLabels[e.type] || e.type);
+          const classStr = e.classes&&e.classes.length ? e.classes.join(', ') : 'All sections';
+          const timePrefix = e.time && /^\d{1,2}:\d{2}$/.test(e.time) ? e.time+' - ' : '';
+          const critStr = (e.criterios&&e.criterios.length) ? ' [Criterios: '+e.criterios.join(', ')+']' : '';
+          lines.push('    • ' + timePrefix + e.title + ' (' + taskTypeLabel + ')');
+          lines.push('      ' + secLabel + ' · ' + classStr + (e.subject?' · '+e.subject:'') + critStr);
+        });
+      });
+    }
+    lines.push('');
+  });
+
+  lines.push('='.repeat(60));
+  lines.push('Redland School — ' + filtered.length + ' events');
+
+  const pageTitle = 'Redland School Calendar ' + levelSubjectLabel.replace(/–/g,'-') + ' ' + new Date().toISOString().slice(0,10);
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = pageTitle.replace(/[^a-zA-Z0-9 _-]/g,'') + '.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Texto plano descargado.');
 }
 
 function buildCalendarReportContent(filtered, fromDate, toDate, selClasses, subjFilter) {
