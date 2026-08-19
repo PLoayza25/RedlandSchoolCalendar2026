@@ -1480,6 +1480,7 @@ function openPrintModal() {
     +'<div class="print-preview" id="print-preview">Select filters to see matching events.</div>'
     +'<div class="modal-actions" style="margin-top:1rem">'
     +'<button class="btn-cancel" id="print-cancel">Cancel</button>'
+    +'<button class="btn-cancel" id="word-go" style="border-color:var(--border-mid)">&#128196; Exportar Word</button>'
     +'<button class="btn-save" id="print-go">&#128438; Open Print / PDF</button>'
     +'</div></div>';
 
@@ -1570,6 +1571,15 @@ function openPrintModal() {
     backdrop.remove();
     doPrint(filtered, fromDate, toDate, selClasses, subjFilter);
   };
+  document.getElementById('word-go').onclick = ()=>{
+    const filtered = getFiltered();
+    const fromDate = document.getElementById('pf-from').value;
+    const toDate = document.getElementById('pf-to').value;
+    const selClasses = [...document.querySelectorAll('.plv:checked')].map(e=>e.value);
+    const subjFilter = document.getElementById('pf-subject').value;
+    backdrop.remove();
+    doExportWord(filtered, fromDate, toDate, selClasses, subjFilter);
+  };
 }
 
 function buildLevelSubjectLabel(selClasses, subjFilter){
@@ -1626,7 +1636,7 @@ function buildLevelSubjectLabel(selClasses, subjFilter){
   return levelLabel + ' \u2013 ' + subjectLabel;
 }
 
-function doPrint(filtered, fromDate, toDate, selClasses, subjFilter) {
+function buildCalendarReportContent(filtered, fromDate, toDate, selClasses, subjFilter) {
   const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'All sections',feriado:'Feriado',sports:'Sports'};
   const CREST_URL = 'https://raw.githubusercontent.com/PLoayza25/RedlandSchoolCalendar2026/main/insignia%20excelente%20transparente%20200.jpg';
 
@@ -1740,6 +1750,13 @@ function doPrint(filtered, fromDate, toDate, selClasses, subjFilter) {
   html += '</div>';
 
   const pageTitle = 'Redland School Calendar ' + levelSubjectLabel.replace(/–/g,'-') + ' ' + new Date().toISOString().slice(0,10);
+  return { html: html, pageTitle: pageTitle };
+}
+
+function doPrint(filtered, fromDate, toDate, selClasses, subjFilter) {
+  const built = buildCalendarReportContent(filtered, fromDate, toDate, selClasses, subjFilter);
+  const html = built.html;
+  const pageTitle = built.pageTitle;
 
   const win = window.open('','_blank','width=800,height=700');
   win.document.write('<!DOCTYPE html><html><head><title>'+pageTitle+'</title>'
@@ -1763,6 +1780,30 @@ function doPrint(filtered, fromDate, toDate, selClasses, subjFilter) {
     +'<\/script>'
     +'</body></html>');
   win.document.close();
+}
+
+// Generates a Word-compatible file (HTML wrapped with Office/Word XML markers,
+// served as application/msword). Word opens this directly with formatting,
+// crest image, and colors intact — no external library needed.
+function doExportWord(filtered, fromDate, toDate, selClasses, subjFilter) {
+  const built = buildCalendarReportContent(filtered, fromDate, toDate, selClasses, subjFilter);
+  const wordDoc = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'
+    +'<head><meta charset="utf-8">'
+    +'<title>'+built.pageTitle+'</title>'
+    +'<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->'
+    +'<style>@page{margin:2cm} body{font-family:Arial,sans-serif}</style>'
+    +'</head><body>'+built.html+'</body></html>';
+
+  const blob = new Blob(['\ufeff', wordDoc], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = built.pageTitle.replace(/[^a-zA-Z0-9 _-]/g,'') + '.doc';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Documento Word descargado.');
 }
 
 document.getElementById('pw-input').focus();
