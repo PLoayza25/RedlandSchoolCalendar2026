@@ -251,6 +251,10 @@ function parseLocal(s){
 }
 const DAY_NAMES=['Mon','Tue','Wed','Thu','Fri'];
 
+function isFeriado(dateStr){
+  return eventsData.some(e=>e.type==='feriado' && e.date===dateStr);
+}
+
 function mondayOfWeekContaining(d){
   const day=d.getDay()||7;
   const m=new Date(d);
@@ -286,7 +290,9 @@ function computeSlots(numWeeks, startMonday){
     const wStart=new Date(startMonday); wStart.setDate(startMonday.getDate()+w*7);
     [2,4].forEach(offset=>{
       const dd=new Date(wStart); dd.setDate(wStart.getDate()+offset);
-      slots.push({date:fmtDate(dd), dayName: offset===2?'Wed':'Fri'});
+      const ds=fmtDate(dd);
+      if(isFeriado(ds)) return; // skip holidays — no catch-up slot generated for this date
+      slots.push({date:ds, dayName: offset===2?'Wed':'Fri'});
     });
   }
   return slots;
@@ -319,7 +325,7 @@ function buildSchedules(){
     const weeks = computeWeeksData(grade, numWeeks, startMonday);
     const slots = computeSlots(numWeeks, startMonday);
 
-    return { ...st, grade, missed, numWeeks, weeks, slots, refAssign:{}, reason:'Sick leave', reasonOther:'' };
+    return { ...st, grade, missed, numWeeks, weeks, slots, refAssign:{}, customSlots:[], reason:'Sick leave', reasonOther:'' };
   });
 
   renderResults();
@@ -400,14 +406,28 @@ function renderResults(){
         +'</div>';
     });
 
+    let customSlotRows='';
+    (st.customSlots||[]).forEach((cs,ci)=>{
+      const assigned = cs.ref ? {ref:cs.ref, item:cs.item} : null;
+      const dateWarn = cs.date && isFeriado(cs.date);
+      customSlotRows += '<div class="slot-row" style="grid-template-columns:130px 50px 1fr auto">'
+        +'<input type="date" value="'+(cs.date||'')+'" data-si="'+si+'" data-cidx="'+ci+'" onchange="setCustomSlotDate(this)" style="'+(dateWarn?'border-color:#a32d2d;color:#a32d2d':'')+'">'
+        +'<input type="number" min="1" placeholder="#" value="'+(cs.ref||'')+'" data-si="'+si+'" data-cidx="'+ci+'" onchange="assignCustomSlot(this)">'
+        +'<span class="slot-fill '+(assigned?'has':'')+'" id="cfill-'+si+'-'+ci+'">'+(dateWarn ? 'Feriado — elige otra fecha' : (assigned ? ((assigned.item.subject||assigned.item.title||'—')+(assigned.item.tema?': '+assigned.item.tema:'')) : '—'))+'</span>'
+        +'<button class="rm-btn" style="padding:5px 9px;font-size:11px" onclick="removeCustomSlot('+si+','+ci+')">&#10005;</button>'
+        +'</div>';
+    });
+
     panel.innerHTML =
       '<h4>'+st.name+' · '+st.cls+' · Absent '+st.from+' to '+st.to+'</h4>'
       + (st.missed.length ? '<table class="mini-table"><thead><tr><th>#</th><th>Date</th><th>Subject</th><th>Tema</th><th>Type</th><th>Criteria</th><th>Direct w/ teacher</th></tr></thead><tbody>'+missedRows+'</tbody></table>'
         : '<p style="font-size:12px;color:var(--text2);margin-bottom:10px">No assessments found for this class in that date range.</p>')
       + '<div class="fb weeks-field-inline"><label>Weeks ahead</label><input type="number" id="weeks-input-'+si+'" min="1" max="20" value="'+st.numWeeks+'" onchange="rebuildWeeksForStudent('+si+')"></div>'
       + loadTableHtml(st.weeks)
-      + '<div style="font-size:11px;color:var(--text2);margin-bottom:6px">Assign a reference number (from the missed list above) to a catch-up slot:</div>'
+      + '<div style="font-size:11px;color:var(--text2);margin-bottom:6px">Assign a reference number (from the missed list above) to a catch-up slot. Holidays are automatically excluded from the Wed/Fri dates below.</div>'
       + slotRows
+      + customSlotRows
+      + '<button class="ibtn" style="margin:6px 0 10px" onclick="addCustomSlot('+si+')">+ Add custom date</button>'
       + '<div class="reason-row">'
       + '<div class="fb"><label>Reason</label><select id="reason-'+si+'" onchange="onReasonChange('+si+')">'
       + '<option'+(st.reason==='Sick leave'?' selected':'')+'>Sick leave</option>'
@@ -440,6 +460,9 @@ function toggleDirect(el){
         st.refAssign[k]=null;
       }
     });
+    (st.customSlots||[]).forEach(cs=>{
+      if(cs.ref===ref){ cs.ref=null; cs.item=null; }
+    });
     renderResults();
     showToast('That assessment will be listed for direct teacher coordination instead.');
   }
@@ -470,6 +493,76 @@ function assignSlot(inputEl){
   fillEl.classList.add('has');
 }
 
+function addCustomSlot(si){
+  const st=builtStudents[si];
+  if(!st.customSlots) st.customSlots=[];
+  st.customSlots.push({date:'', ref:null, item:null});
+  renderResults();
+}
+
+function removeCustomSlot(si, ci){
+  const st=builtStudents[si];
+  st.customSlots.splice(ci,1);
+  renderResults();
+}
+
+function setCustomSlotDate(inputEl){
+  const si=Number(inputEl.dataset.si);
+  const ci=Number(inputEl.dataset.cidx);
+  const st=builtStudents[si];
+  const cs=st.customSlots[ci];
+  const newDate = inputEl.value;
+
+  if(newDate && isFeriado(newDate)){
+    showToast('Esa fecha es un feriado — elige otra fecha para el catch-up.');
+    cs.date = newDate; // keep it visible with a warning so the coordinator can see + fix it
+    renderResults();
+    return;
+  }
+  cs.date = newDate;
+  renderResults();
+}
+
+function assignCustomSlot(inputEl){
+  const si=Number(inputEl.dataset.si);
+  const ci=Number(inputEl.dataset.cidx);
+  const ref=parseInt(inputEl.value);
+  const st=builtStudents[si];
+  const cs=st.customSlots[ci];
+  const fillEl=document.getElementById('cfill-'+si+'-'+ci);
+
+  if(!cs.date){
+    showToast('Selecciona primero una fecha para este catch-up.');
+    inputEl.value='';
+    return;
+  }
+  if(isFeriado(cs.date)){
+    showToast('Esa fecha es un feriado — elige otra fecha antes de asignar.');
+    inputEl.value='';
+    cs.ref=null; cs.item=null;
+    return;
+  }
+  if(!ref || ref<1 || ref>st.missed.length){
+    cs.ref=null; cs.item=null;
+    if(fillEl){ fillEl.textContent='—'; fillEl.classList.remove('has'); }
+    return;
+  }
+  const m=st.missed[ref-1];
+  if(m.coordDirect){
+    showToast('This assessment is marked "Direct w/ teacher" — it cannot be assigned to a catch-up date.');
+    inputEl.value='';
+    cs.ref=null; cs.item=null;
+    if(fillEl){ fillEl.textContent='—'; fillEl.classList.remove('has'); }
+    return;
+  }
+  cs.ref=ref; cs.item=m;
+  if(fillEl){
+    const displaySubject = m.subject || m.title || '—';
+    fillEl.textContent=displaySubject+(m.tema?': '+m.tema:'');
+    fillEl.classList.add('has');
+  }
+}
+
 function submitAll(){
   const entries=[];
   builtStudents.forEach((st,idx)=>{
@@ -485,6 +578,18 @@ function submitAll(){
           originalSubject: a.item.subject || a.item.title || '', originalTema: a.item.tema||'', originalType: a.item.atype || 'Test',
           originalCriterios: a.item.criterios||[], originalDate: a.item.date,
           newDate: slot.date, reason: reasonSel, reasonOther: reasonSel==='Other'?reasonOther:'',
+          comments: comments, status: 'rescheduled'
+        });
+      }
+    });
+
+    (st.customSlots||[]).forEach(cs=>{
+      if(cs.ref && cs.item && cs.date && !isFeriado(cs.date)){
+        entries.push({
+          studentName: st.name, class: st.cls, absentFrom: st.from, absentTo: st.to,
+          originalSubject: cs.item.subject || cs.item.title || '', originalTema: cs.item.tema||'', originalType: cs.item.atype || 'Test',
+          originalCriterios: cs.item.criterios||[], originalDate: cs.item.date,
+          newDate: cs.date, reason: reasonSel, reasonOther: reasonSel==='Other'?reasonOther:'',
           comments: comments, status: 'rescheduled'
         });
       }
