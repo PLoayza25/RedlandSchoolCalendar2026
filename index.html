@@ -1648,7 +1648,7 @@ function buildLevelSubjectLabel(selClasses, subjFilter){
 
 // Plain-text export: same weeks/events as the PDF/Word reports, but as a
 // .txt file with no images, no HTML, no colors — just readable text.
-function doExportPlainText(filtered, fromDate, toDate, selClasses, subjFilter) {
+function buildPlainTextLines(filtered, fromDate, toDate, selClasses, subjFilter) {
   const typeLabels = {activity:'Activity',test:'Test',salida:'Salida',cross:'All sections',feriado:'Feriado',sports:'Sports'};
   const levelSubjectLabel = buildLevelSubjectLabel(selClasses||[], subjFilter||'');
 
@@ -1684,11 +1684,10 @@ function doExportPlainText(filtered, fromDate, toDate, selClasses, subjFilter) {
   const weekYearFmt = d => d.toLocaleDateString('es-CL', {year:'numeric'});
 
   let lines = [];
-  lines.push('REDLAND SCHOOL');
-  lines.push('School Calendar — ' + levelSubjectLabel);
-  lines.push('Impreso: ' + new Date().toLocaleDateString('es-CL'));
-  lines.push('='.repeat(60));
-  lines.push('');
+  lines.push({text:'REDLAND SCHOOL', kind:'title'});
+  lines.push({text:'School Calendar — ' + levelSubjectLabel, kind:'subtitle'});
+  lines.push({text:'Impreso: ' + new Date().toLocaleDateString('es-CL'), kind:'subtitle'});
+  lines.push({text:'', kind:'blank'});
 
   weeks.forEach(week => {
     const weekDates = [];
@@ -1703,19 +1702,18 @@ function doExportPlainText(filtered, fromDate, toDate, selClasses, subjFilter) {
 
     if (!allFeriado && weekAssessments.length === 0) return;
 
-    lines.push('Semana del ' + weekLabelFmt(week.start) + ' al ' + weekLabelFmt(week.end) + ' de ' + weekYearFmt(week.start));
-    lines.push('-'.repeat(60));
+    lines.push({text:'Semana del ' + weekLabelFmt(week.start) + ' al ' + weekLabelFmt(week.end) + ' de ' + weekYearFmt(week.start), kind:'week'});
 
     if (allFeriado) {
-      lines.push('  School holidays');
+      lines.push({text:'School holidays', kind:'plain', indent:1});
     } else {
       weekDates.forEach(ds => {
         const dayEvents = byDateMap[ds];
         if (!dayEvents || dayEvents.length === 0) return;
         const d = new Date(ds+'T12:00:00');
         const dateLabel = d.toLocaleDateString('es-CL', {weekday:'long', day:'numeric', month:'long'});
-        lines.push('');
-        lines.push('  ' + dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1));
+        lines.push({text:'', kind:'blank'});
+        lines.push({text:dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1), kind:'day', indent:1});
 
         dayEvents.forEach(e => {
           const sk = evSectionKey(e);
@@ -1724,23 +1722,48 @@ function doExportPlainText(filtered, fromDate, toDate, selClasses, subjFilter) {
           const classStr = e.classes&&e.classes.length ? e.classes.join(', ') : 'All sections';
           const timePrefix = e.time && /^\d{1,2}:\d{2}$/.test(e.time) ? e.time+' - ' : '';
           const critStr = (e.criterios&&e.criterios.length) ? ' [Criterios: '+e.criterios.join(', ')+']' : '';
-          lines.push('    • ' + timePrefix + e.title + ' (' + taskTypeLabel + ')');
-          lines.push('      ' + secLabel + ' · ' + classStr + (e.subject?' · '+e.subject:'') + critStr);
+          lines.push({text:'• ' + timePrefix + e.title + ' (' + taskTypeLabel + ')', kind:'plain', indent:2});
+          lines.push({text:secLabel + ' · ' + classStr + (e.subject?' · '+e.subject:'') + critStr, kind:'plain', indent:3});
         });
       });
     }
-    lines.push('');
+    lines.push({text:'', kind:'blank'});
   });
 
-  lines.push('='.repeat(60));
-  lines.push('Redland School — ' + filtered.length + ' events');
+  lines.push({text:'Redland School — ' + filtered.length + ' events', kind:'subtitle'});
 
   const pageTitle = 'Redland School Calendar ' + levelSubjectLabel.replace(/–/g,'-') + ' ' + new Date().toISOString().slice(0,10);
-  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  return { lines: lines, pageTitle: pageTitle };
+}
+
+function plainLinesToTxt(lines) {
+  const indentStr = n => '  '.repeat(n||0);
+  return lines.map(l => {
+    if (l.kind==='blank') return '';
+    return indentStr(l.indent) + l.text;
+  }).join('\n');
+}
+
+function plainLinesToWordHtml(lines) {
+  const indentPx = n => (n||0) * 20;
+  return lines.map(l => {
+    if (l.kind==='blank') return '<p>&nbsp;</p>';
+    if (l.kind==='title') return '<p style="font-weight:bold;font-size:16pt;margin:0">'+l.text+'</p>';
+    if (l.kind==='subtitle') return '<p style="font-size:10pt;color:#555;margin:0">'+l.text+'</p>';
+    if (l.kind==='week') return '<p style="font-weight:bold;font-size:12pt;margin:10pt 0 2pt 0">'+l.text+'</p>';
+    if (l.kind==='day') return '<p style="font-weight:bold;margin:6pt 0 0 '+indentPx(l.indent)+'px">'+l.text+'</p>';
+    return '<p style="margin:0 0 0 '+indentPx(l.indent)+'px">'+l.text+'</p>';
+  }).join('');
+}
+
+function doExportPlainText(filtered, fromDate, toDate, selClasses, subjFilter) {
+  const built = buildPlainTextLines(filtered, fromDate, toDate, selClasses, subjFilter);
+  const text = plainLinesToTxt(built.lines);
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = pageTitle.replace(/[^a-zA-Z0-9 _-]/g,'') + '.txt';
+  a.download = built.pageTitle.replace(/[^a-zA-Z0-9 _-]/g,'') + '.txt';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -1897,14 +1920,17 @@ function doPrint(filtered, fromDate, toDate, selClasses, subjFilter) {
 // Generates a Word-compatible file (HTML wrapped with Office/Word XML markers,
 // served as application/msword). Word opens this directly with formatting,
 // crest image, and colors intact — no external library needed.
+// Word export in plain, unformatted text — no image, no colors/cards.
+// Only bold is used for the title and week headers, for basic readability.
 function doExportWord(filtered, fromDate, toDate, selClasses, subjFilter) {
-  const built = buildCalendarReportContent(filtered, fromDate, toDate, selClasses, subjFilter);
+  const built = buildPlainTextLines(filtered, fromDate, toDate, selClasses, subjFilter);
+  const bodyHtml = plainLinesToWordHtml(built.lines);
   const wordDoc = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'
     +'<head><meta charset="utf-8">'
     +'<title>'+built.pageTitle+'</title>'
     +'<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->'
-    +'<style>@page{margin:2cm} body{font-family:Arial,sans-serif}</style>'
-    +'</head><body>'+built.html+'</body></html>';
+    +'<style>@page{margin:2cm} body{font-family:Calibri,Arial,sans-serif;font-size:11pt}</style>'
+    +'</head><body>'+bodyHtml+'</body></html>';
 
   const blob = new Blob(['\ufeff', wordDoc], { type: 'application/msword' });
   const url = URL.createObjectURL(blob);
