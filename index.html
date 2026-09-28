@@ -129,7 +129,7 @@ body { font-family: var(--font); background: var(--bg-tertiary); color: var(--te
 .wev-del { background: none; border: none; cursor: pointer; font-size: 11px; color: var(--text-tertiary); padding: 2px 5px; border-radius: 3px; flex-shrink: 0; margin-top: 1px; }
 .wev-del:hover { background: rgba(220,50,50,0.1); color: #a32d2d; }
 
-.detail-popup { position: fixed; z-index: 250; background: var(--bg-primary); border: 0.5px solid var(--border-mid); border-radius: var(--radius-lg); padding: 1rem; width: 280px; max-width: 90vw; box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+.detail-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 250; background: var(--bg-primary); border: 0.5px solid var(--border-mid); border-radius: var(--radius-lg); padding: 1rem; width: 280px; max-width: 90vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 4px 24px rgba(0,0,0,0.2); }
 .detail-popup h4 { font-size: 13px; font-weight: 500; margin-bottom: 8px; color: var(--text-primary); }
 .detail-row { display: flex; gap: 6px; margin-bottom: 5px; flex-wrap: wrap; }
 .detail-label { font-size: 11px; color: var(--text-tertiary); width: 60px; flex-shrink: 0; }
@@ -824,24 +824,6 @@ function showDetail(evId, anchorEl) {
   popup.innerHTML = html;
   document.body.appendChild(popup);
   activePopup = popup;
-  const rect = anchorEl.getBoundingClientRect();
-  const popupHeight = 220; // approximate max height of the popup
-  const popupWidth = 284;
-  let top  = rect.bottom+window.scrollY+4;
-  let left = rect.left+window.scrollX;
-
-  // Flip above the chip if there isn't enough room below the visible viewport
-  const spaceBelow = window.innerHeight - rect.bottom;
-  if (spaceBelow < popupHeight) {
-    top = rect.top + window.scrollY - popupHeight - 4;
-    if (top < window.scrollY + 8) top = window.scrollY + 8; // clamp to top of viewport if still too tight
-  }
-
-  if (left + popupWidth > window.innerWidth) left = window.innerWidth - popupWidth - 8;
-  if (left < 8) left = 8;
-
-  popup.style.top = top + 'px';
-  popup.style.left = left + 'px';
 }
 document.addEventListener('click', e=>{
   if (activePopup&&!activePopup.contains(e.target)&&!e.target.classList.contains('ev')&&!e.target.classList.contains('wev')) closePopup();
