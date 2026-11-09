@@ -93,6 +93,24 @@ Obligatorio: `title` y `sessions` (al menos una sesión). Todo lo demás es opci
 
 Los campos de seguimiento (`status`, `note`, `date`) los añade el generador vacíos; luego el docente los completa dentro del planificador.
 
+## Recursos de cada sesión (archivos)
+
+En **Preparar sesión**, el botón **Subir archivos** (o arrastrar al recuadro) adjunta PowerPoint, Word, PDF, Excel, imágenes o audio/vídeo a la sesión.
+
+- **Chrome / Edge:** la primera vez se elige la *carpeta de recursos de la unidad*. Cada archivo se copia a `Sesion_NN/` dentro de esa carpeta, y el planificador recuerda la carpeta en ese navegador. Conviene guardar el HTML y la carpeta juntos en Drive u OneDrive; en otro equipo basta con pulsar **Elegir carpeta** y seleccionar la misma.
+- **Firefox / Safari:** no permiten escribir en carpetas; los archivos se guardan dentro del navegador (aviso visible en la sesión).
+- **Abrir:** PDF, imágenes, audio y vídeo se ven dentro del planificador (con opción de pestaña nueva); PowerPoint, Word y Excel se descargan para abrirse con su programa.
+- En **Usar en clase** solo aparece el botón **Abrir**; quitar y descargar quedan en Preparar sesión. La vista **Recursos** lista todos los archivos de la unidad.
+
+El planificador anota cada archivo en `resources` (la app no necesita enviarlo; si lo envía, se conserva):
+
+```jsonc
+"resources": [
+  { "id": "R…", "session": 3, "name": "Presentación clase 3.pptx", "path": "Sesion_03/Presentación clase 3.pptx",
+    "size": 30000, "type": "…", "added": "2026-11-09", "store": "carpeta" }   // store: "carpeta" | "navegador"
+]
+```
+
 ## Texto para pegar en el chat de la app
 
 > Añade a la app un botón **"Descargar planificador interactivo"**. Al pulsarlo, convierte la unidad actual al formato JSON descrito en `ESQUEMA-UNIDAD.md` y llama a `descargarPlanificador(unidad)` de `generar-planificador.js` (incluido como `<script>` o pegado dentro de la app). Mapea cada sesión y cada actividad de la app a `sessions[]` y `activities[]`; usa las claves de `curriculum` exactamente como aparecen en el esquema.
